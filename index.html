@@ -42,7 +42,7 @@
 <header>
     <img src="https://via.placeholder.com/120x60?text=7+Toros" alt="7 Toros" class="logo" id="app-logo">
     <h1 id="nombre-negocio" style="margin:0; font-size: 1.5em; text-transform: uppercase;">7 Toros</h1>
-    <div id="status-red" class="online">Detectando red...</div>
+    <div id="status-red" class="online">Detectando señal...</div>
 </header>
 
 <div class="container">
@@ -107,10 +107,10 @@
             <input type="file" id="cfg-logo-input" accept="image/*" onchange="procesarLogo(this)">
             
             <div style="background: #eef; padding: 15px; margin-top: 15px; border: 1px solid #ccd;">
-                <h4>🔄 Ecosistema Sincronizado</h4>
-                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Inventa una palabra clave única para enlazar tus dispositivos móviles.</p>
+                <h4>🔄 Sincronización Multidispositivo</h4>
+                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Crea una palabra secreta única sin espacios para enlazar tus celulares.</p>
                 <input type="text" id="cfg-sync-code" placeholder="Ej. toros7sincro" onchange="configurarSyncKey()">
-                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Sincronizar Nube Manual</button>
+                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización Manual</button>
             </div>
             <button class="btn btn-primario" style="margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
         </div>
@@ -136,22 +136,27 @@
     </div>
 </div>
 
+<div id="ticket-final" style="display: none;"></div>
+
 <script>
-    // PROTECCIÓN DE MEMORIA LOCAL CONTRA ERRORES
+    // REGISTRO DEL SERVICE WORKER PARA SEÑAL ABIERTA OFFLINE
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log("Modo app listo"));
+    }
+
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
+    
     try {
         const localData = localStorage.getItem('carniceria_db');
         if(localData) {
             const parsed = JSON.parse(localData);
-            if(parsed && typeof parsed === 'object') {
-                db = Object.assign(db, parsed);
-            }
+            if(parsed && typeof parsed === 'object') db = Object.assign(db, parsed);
         }
-    } catch(e) { console.log("Reinicio de base de datos limpia"); }
+    } catch(e) {}
 
     let carrito = [];
     let clienteSeleccionado = null;
-    const ENDPOINT_CLOUD = "https://api.npoint.io/08a3f8b0e8c05763b6bb"; // Servidor abierto y seguro sin CORS
+    const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
     window.onload = () => {
         aplicarConfigUI();
@@ -159,7 +164,7 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
-        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey) descargarDeLaNube(); }, 12000);
+        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey) descargarDeLaNube(); }, 10000);
     };
 
     function evaluarEstadoRed() {
@@ -219,7 +224,6 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // ACCIONES LOCALES LIBRES DE ERRORES RED
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -253,7 +257,6 @@
         }
     }
 
-    // RENDERS SEGUROS SIN INYECCIÓN DE STRINGS EN ATRIBUTOS
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -316,8 +319,7 @@
         clienteSeleccionado = cliente;
         document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
         carrito = [];
-        actualizarTicketUI();
-        irA('vista-caja');
+        迫加TicketUI();
     }
 
     function agregarAlCarrito(idProd) {
@@ -326,10 +328,10 @@
         if(isNaN(peso) || peso <= 0 || !prod) return;
         carrito.push({ nombre: prod.nombre, precio: prod.precio, peso: peso, subtotal: prod.precio * peso });
         document.getElementById('peso-input').value = "1.000";
-        actualizarTicketUI();
+        迫加TicketUI();
     }
 
-    function actualizarTicketUI() {
+    function 迫加TicketUI() {
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
         document.getElementById('tkt-id').innerText = Date.now().toString().slice(-6);
@@ -344,6 +346,7 @@
             tabla.innerHTML += `<tr><td>${i.nombre}</td><td align="center">${i.peso.toFixed(3)}</td><td align="right">$${i.subtotal.toFixed(2)}</td></tr>`;
         });
         document.getElementById('tkt-total').innerText = `$${total.toFixed(2)}`;
+        irA('vista-caja');
     }
 
     function finalizarVenta() {
@@ -359,7 +362,6 @@
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
         if(typeof html2canvas === 'undefined') {
-            alert("Captura offline no disponible en este instante. Generando nota interna...");
             finalizarVenta(); irA('vista-inicio'); return;
         }
         const contenedor = document.getElementById('ticket-captura');
@@ -383,38 +385,37 @@
         alert(`Nota: #${v.id.toString().slice(-6)}\nCliente: ${v.clienteNombre}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
     }
 
-    // ARQUITECTURA DE RED PURA - CERO BLOQUEOS CORS
-    function subirALaNube() {
+    // ARQUITECTURA ASÍNCRONA SIN BLOQUEOS DE CONEXIÓN
+    async function subirALaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
         try {
-            fetch(`${ENDPOINT_CLOUD}/${db.negocio.syncKey}`, {
-                method: 'POST',
+            await fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(db)
-            }).catch(() => console.log("Reintentando conexión..."));
-        } catch(e){}
+            });
+        } catch(e) { console.log("Red en espera"); }
     }
 
-    function descargarDeLaNube() {
+    async function descargarDeLaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
         try {
-            fetch(`${ENDPOINT_CLOUD}/${db.negocio.syncKey}`)
-            .then(res => { if(!res.ok) return null; return res.json(); })
-            .then(cloudData => {
-                if(cloudData && cloudData.updatedAt && cloudData.updatedAt > db.updatedAt) {
-                    db = cloudData;
-                    localStorage.setItem('carniceria_db', JSON.stringify(db));
-                    aplicarConfigUI(); renderClientes(); renderCatalogo();
-                } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
-                    subirALaNube();
-                }
-            }).catch(()=>{});
-        } catch(e){}
+            const res = await fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`);
+            if(!res.ok) return;
+            const cloudData = await res.json();
+            if(cloudData && cloudData.updatedAt && cloudData.updatedAt > db.updatedAt) {
+                db = cloudData;
+                localStorage.setItem('carniceria_db', JSON.stringify(db));
+                aplicarConfigUI(); renderClientes(); renderCatalogo();
+            } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
+                subirALaNube();
+            }
+        } catch(e) { console.log("Descarga en espera"); }
     }
 
     function forzarSincronizacionCloud() {
-        if(!navigator.onLine) { alert("Estás trabajando offline."); return; }
-        descargarDeLaNube(); alert("Sincronización solicitada a la nube.");
+        if(!navigator.onLine) { alert("Estás offline."); return; }
+        descargarDeLaNube(); alert("Sincronización en curso.");
     }
 
     function guardarDB() {
