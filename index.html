@@ -243,7 +243,7 @@
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
         if(!nom || isNaN(pre) || pre <= 0) return;
-        db.productos.push({ id: Date.now(), nombre: nom, price: pre, precio: pre });
+        db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
         document.getElementById('p-nombre').value = '';
         document.getElementById('p-precio').value = '';
         guardarDB(); renderCatalogo(); renderListasAdmin();
@@ -256,7 +256,6 @@
         }
     }
 
-    // LISTADO CON DESGLOSE DESPLEGABLE COMPLETO
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
