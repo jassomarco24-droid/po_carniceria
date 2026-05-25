@@ -14,7 +14,7 @@
         .logo { max-height: 80px; width: auto; display: block; margin: 0 auto 5px auto; object-fit: contain; }
         .btn { border: 1px solid var(--oscuro); padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 0.8em; transition: 0.1s; display: inline-block; text-align: center; }
         .btn-primario { background: var(--primario); color: white; border-color: var(--primario); width: 100%; }
-        .btn-gris { background: transparent; color: var(--oscuro); }
+        .btn-gris { background: transparent; color: var(--oscuro); width: 100%; }
         .btn-danger { background: #ffdddd; color: #cc0000; border-color: #cc0000; padding: 4px 8px; font-size: 0.7em; }
         .btn:active { transform: scale(0.97); }
         .view { display: none; }
@@ -50,13 +50,13 @@
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
             <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" onclick="irA('vista-config')">⚙️ Panel de Control</button>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙️ Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
 
     <div id="vista-caja" class="view">
-        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅️ Volver</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅️ Volver</button>
         <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
             Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
         </div>
@@ -90,7 +90,7 @@
     </div>
 
     <div id="vista-config" class="view">
-        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
         
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="cambiarTab('tab-negocio')">🏢 Negocio y Nube</button>
@@ -110,7 +110,7 @@
                 <h4>🔄 Sincronización Multidispositivo</h4>
                 <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Crea una palabra secreta única sin espacios para enlazar tus celulares.</p>
                 <input type="text" id="cfg-sync-code" placeholder="Ej. toros7sincro" onchange="configurarSyncKey()">
-                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización Manual</button>
+                <button class="btn btn-gris" style="background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización Manual</button>
             </div>
             <button class="btn btn-primario" style="margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
         </div>
@@ -139,7 +139,6 @@
 <div id="ticket-final" style="display: none;"></div>
 
 <script>
-    // REGISTRO DEL SERVICE WORKER PARA SEÑAL ABIERTA OFFLINE
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log("Modo app listo"));
     }
@@ -244,7 +243,7 @@
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
         if(!nom || isNaN(pre) || pre <= 0) return;
-        db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
+        db.productos.push({ id: Date.now(), nombre: nom, price: pre, precio: pre });
         document.getElementById('p-nombre').value = '';
         document.getElementById('p-precio').value = '';
         guardarDB(); renderCatalogo(); renderListasAdmin();
@@ -257,28 +256,44 @@
         }
     }
 
+    // LISTADO CON DESGLOSE DESPLEGABLE COMPLETO
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
+        
         db.clientes.forEach(c => {
             const compras = db.ventas.filter(v => v.clienteId === c.id);
             const total = compras.reduce((acc, v) => acc + v.total, 0);
+            
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <h3 style="margin:0; text-transform:uppercase;">${c.nombre}</h3>
-                <p style="font-size:0.85em; color:#555;">Historial: <strong>$${total.toFixed(2)}</strong></p>
-                <button class="btn btn-primario btn-abrir-cuenta">Nueva Cuenta</button>
-                <div id="historial-${c.id}"></div>
+                <p style="font-size:0.85em; color:#555; margin-bottom:10px;">Historial: <strong>$${total.toFixed(2)}</strong></p>
+                <button class="btn btn-primario btn-abrir-cuenta" style="margin-bottom:6px;">Nueva Cuenta</button>
+                <button class="btn btn-gris btn-ver-historial">📄 Ver Historial Completo (${compras.length})</button>
+                <div id="historial-${c.id}" style="display: none; margin-top: 8px; max-height: 180px; overflow-y: auto; border-top: 1px dashed #ccc; padding-top: 4px;"></div>
             `;
+            
             card.querySelector('.btn-abrir-cuenta').onclick = () => iniciarVenta(c.id);
-            compras.slice(-2).reverse().forEach(v => {
+            
+            const btnHistorial = card.querySelector('.btn-ver-historial');
+            const divHistorial = card.querySelector(`#historial-${c.id}`);
+            
+            btnHistorial.onclick = () => {
+                const oculto = divHistorial.style.display === 'none';
+                divHistorial.style.display = oculto ? 'block' : 'none';
+                btnHistorial.innerText = oculto ? '▲ Ocultar Historial' : `📄 Ver Historial Completo (${compras.length})`;
+            };
+
+            compras.slice().reverse().forEach(v => {
                 const itemH = document.createElement('div');
                 itemH.className = 'historial-item';
                 itemH.innerHTML = `<span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong>`;
                 itemH.onclick = () => verDetalleVenta(v.id);
-                card.querySelector(`#historial-${c.id}`).appendChild(itemH);
+                divHistorial.appendChild(itemH);
             });
+            
             lista.appendChild(card);
         });
     }
@@ -319,7 +334,7 @@
         clienteSeleccionado = cliente;
         document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
         carrito = [];
-        迫加TicketUI();
+        actualizarTicketUI();
     }
 
     function agregarAlCarrito(idProd) {
@@ -328,10 +343,10 @@
         if(isNaN(peso) || peso <= 0 || !prod) return;
         carrito.push({ nombre: prod.nombre, precio: prod.precio, peso: peso, subtotal: prod.precio * peso });
         document.getElementById('peso-input').value = "1.000";
-        迫加TicketUI();
+        actualizarTicketUI();
     }
 
-    function 迫加TicketUI() {
+    function actualizarTicketUI() {
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
         document.getElementById('tkt-id').innerText = Date.now().toString().slice(-6);
@@ -385,7 +400,6 @@
         alert(`Nota: #${v.id.toString().slice(-6)}\nCliente: ${v.clienteNombre}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
     }
 
-    // ARQUITECTURA ASÍNCRONA SIN BLOQUEOS DE CONEXIÓN
     async function subirALaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
         try {
