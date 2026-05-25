@@ -42,7 +42,7 @@
 <header>
     <img src="https://via.placeholder.com/120x60?text=7+Toros" alt="7 Toros" class="logo" id="app-logo">
     <h1 id="nombre-negocio" style="margin:0; font-size: 1.5em; text-transform: uppercase;">7 Toros</h1>
-    <div id="status-red" class="online">Conectado</div>
+    <div id="status-red" class="online">Cargando...</div>
 </header>
 
 <div class="container">
@@ -93,7 +93,7 @@
         <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
         
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="cambiarTab('tab-negocio')">🏢 Negocio y Sincronización</button>
+            <button class="tab-btn active" onclick="cambiarTab('tab-negocio')">🏢 Negocio y Nube</button>
             <button class="tab-btn" onclick="cambiarTab('tab-productos')">🥩 Cortes</button>
             <button class="tab-btn" onclick="cambiarTab('tab-clientes')">👥 Clientes</button>
         </div>
@@ -107,10 +107,10 @@
             <input type="file" id="cfg-logo-input" accept="image/*" onchange="procesarLogo(this)">
             
             <div style="background: #eef; padding: 15px; margin-top: 15px; border: 1px solid #ccd;">
-                <h4>🔄 Ecosistema en la Nube (Multidispositivo)</h4>
-                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Escribe tu clave secreta de sincronización única para enlazar tus pantallas.</p>
-                <input type="text" id="cfg-sync-code" placeholder="Ej. toros-7-secreto" onchange="configurarSyncKey()">
-                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización de Datos</button>
+                <h4>☁️ Conexión con tu Google Sheets Privado</h4>
+                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Pega aquí la URL exacta de la aplicación web que generaste en tu Apps Script.</p>
+                <input type="text" id="cfg-sync-code" placeholder="https://script.google.com/macros/s/.../exec" onchange="configurarSyncKey()">
+                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">🔄 Sincronizar Nube Ahora</button>
             </div>
             <button class="btn btn-primario" style="width:100%; margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
         </div>
@@ -136,20 +136,21 @@
     </div>
 </div>
 
-<div id="ticket-final" style="display: none;" class="ticket-final"></div>
+<div id="ticket-final" style="display: none;"></div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('carniceria_db')) || {
-        negocio: { nombre: "7 Toros", contacto: "Distribuidora de Carnes", logo: "", syncKey: "" },
-        productos: [{ id: 1, nombre: 'Bistec de Res', precio: 160 }],
-        clientes: [{ id: 101, nombre: "Cliente General" }],
-        ventas: [],
-        updatedAt: 0
-    };
+    // BASE DE DATOS LOCAL ROBUSTA E INDESTRUCTIBLE
+    let db = JSON.parse(localStorage.getItem('carniceria_db')) || {};
+    
+    // Blindaje de estructura interna contra corrupción de datos
+    db.negocio = db.negocio || { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" };
+    db.productos = db.productos || [{ id: 1, nombre: 'Bistec de Res', precio: 160 }];
+    db.clientes = db.clientes || [{ id: 101, nombre: "Cliente General" }];
+    db.ventas = db.ventas || [];
+    db.updatedAt = db.updatedAt || 0;
 
     let carrito = [];
     let clienteSeleccionado = null;
-    const BUCKET_CLOUD = "u8X2p7M4qN8K1sR9B5v9pZ"; 
 
     window.onload = () => {
         aplicarConfigUI();
@@ -157,20 +158,17 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
-        setInterval(() => { if(db.negocio.syncKey) descargarDeLaNube(); }, 15000);
+        setInterval(() => { if(db.negocio.syncKey) descargarDeLaNube(); }, 10000); // Monitoreo automático cada 10 seg
     };
-
-    window.addEventListener('online', evaluarEstadoRed);
-    window.addEventListener('offline', evaluarEstadoRed);
 
     function evaluarEstadoRed() {
         const indicador = document.getElementById('status-red');
         if(navigator.onLine) {
-            indicador.innerText = "Conectado a la Nube";
+            indicador.innerText = "Nube Conectada";
             indicador.className = "online";
             if(db.negocio.syncKey) subirALaNube();
         } else {
-            indicador.innerText = "Trabajando Offline (Cambios guardados local)";
+            indicador.innerText = "Modo Offline Seguro";
             indicador.className = "offline";
         }
     }
@@ -219,15 +217,16 @@
         db.negocio.nombre = document.getElementById('cfg-nombre').value;
         db.negocio.contacto = document.getElementById('cfg-contacto').value;
         guardarDB(); aplicarConfigUI();
-        alert("Configuración de cabecera guardada.");
+        alert("Cabecera guardada.");
     }
 
     function configurarSyncKey() {
-        db.negocio.syncKey = document.getElementById('cfg-sync-code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+        db.negocio.syncKey = document.getElementById('cfg-sync-code').value.trim();
         guardarDB();
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
+    // ACCIONES PROTEGIDAS CONTRE CAÍDAS Red
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -237,7 +236,7 @@
     }
 
     function eliminarCliente(id) {
-        if(confirm("¿Eliminar este cliente de la lista?")) {
+        if(confirm("¿Eliminar este cliente?")) {
             db.clientes = db.clientes.filter(c => c.id !== id);
             db.ventas = db.ventas.filter(v => v.clienteId !== id);
             guardarDB(); renderClientes(); renderListasAdmin();
@@ -255,14 +254,16 @@
     }
 
     function eliminarProducto(id) {
-        if(confirm("¿Eliminar este corte del catálogo?")) {
+        if(confirm("¿Eliminar del catálogo?")) {
             db.productos = db.productos.filter(p => p.id !== id);
             guardarDB(); renderCatalogo(); renderListasAdmin();
         }
     }
 
+    // RENDERS SEGUROS
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
+        if(!lista) return;
         lista.innerHTML = '';
         db.clientes.forEach(c => {
             const compras = db.ventas.filter(v => v.clienteId === c.id);
@@ -284,6 +285,7 @@
 
     function renderCatalogo() {
         const cat = document.getElementById('catalogo-btns');
+        if(!cat) return;
         cat.innerHTML = '';
         db.productos.forEach(p => {
             cat.innerHTML += `<button class="btn btn-gris" style="background:#fff; text-align:left;" onclick="añadirAlCarrito(${p.id})"><strong>${p.nombre}</strong><br><span style="color:var(--primario)">$${p.precio.toFixed(2)} / Kg</span></button>`;
@@ -291,13 +293,13 @@
     }
 
     function renderListasAdmin() {
-        const lp = document.getElementById('lista-config-productos'); lp.innerHTML = '';
+        const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
         db.productos.forEach(p => {
-            lp.innerHTML += `<div class="item-admin"><span>${p.nombre} ($${p.precio}/kg)</span><button class="btn btn-danger" onclick="eliminarProducto(${p.id})">✕</button></div>`;
+            if(lp) lp.innerHTML += `<div class="item-admin"><span>${p.nombre} ($${p.precio}/kg)</span><button class="btn btn-danger" onclick="eliminarProducto(${p.id})">✕</button></div>`;
         });
-        const lc = document.getElementById('lista-config-clientes'); lc.innerHTML = '';
+        const lc = document.getElementById('lista-config-clientes'); if(lc) lc.innerHTML = '';
         db.clientes.forEach(c => {
-            lc.innerHTML += `<div class="item-admin"><span>${c.nombre}</span><button class="btn btn-danger" onclick="eliminarCliente(${c.id})">✕</button></div>`;
+            if(lc) lc.innerHTML += `<div class="item-admin"><span>${c.nombre}</span><button class="btn btn-danger" onclick="eliminarCliente(${c.id})">✕</button></div>`;
         });
     }
 
@@ -312,7 +314,7 @@
     function añadirAlCarrito(idProd) {
         const prod = db.productos.find(p => p.id === idProd);
         const peso = parseFloat(document.getElementById('peso-input').value);
-        if(isNaN(peso) || peso <= 0) return;
+        if(isNaN(peso) || peso <= 0 || !prod) return;
         carrito.push({ nombre: prod.nombre, precio: prod.precio, peso: peso, subtotal: prod.precio * peso });
         document.getElementById('peso-input').value = "1.000";
         actualizarTicketUI();
@@ -347,6 +349,10 @@
 
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
+        if (typeof html2canvas === 'undefined') {
+            alert("Herramienta de imagen offline no lista. Intenta en 3 segundos.");
+            return;
+        }
         const contenedor = document.getElementById('ticket-captura');
         html2canvas(contenedor, { scale: 3, backgroundColor: "#ffffff" }).then(canvas => {
             const link = document.createElement('a');
@@ -361,20 +367,22 @@
     function verDetalleVenta(idVenta) {
         const v = db.ventas.find(venta => venta.id === idVenta);
         if(!v) return;
-        
         if(!v.items || v.items.length === 0) {
-            alert(`Nota: #${v.id.toString().slice(-6)}\nFecha: ${v.fecha}\nCliente: ${v.clienteNombre}\n---------------------------\nNo hay desglose disponible para esta nota antigua.\n---------------------------\nTOTAL: $${v.total.toFixed(2)}`);
+            alert(`Nota: #${v.id.toString().slice(-6)}\nTotal: $${v.total.toFixed(2)}`);
             return;
         }
-        
-        let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) x $${i.precio.toFixed(2)} -> $${i.subtotal.toFixed(2)}`).join('\n');
-        alert(`Nota: #${v.id.toString().slice(-6)}\nFecha: ${v.fecha}\nCliente: ${v.clienteNombre}\n---------------------------\n${detalle}\n---------------------------\nTOTAL: $${v.total.toFixed(2)}`);
+        let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) -> $${i.subtotal.toFixed(2)}`).join('\n');
+        alert(`Nota: #${v.id.toString().slice(-6)}\nCliente: ${v.clienteNombre}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
     }
 
+    // ARQUITECTURA DE FLUJO DE SINCRONIZACIÓN GOOGLE SHEETS
     function subirALaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
-        fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`, {
-            method: 'PUT', 
+        
+        // Bloqueo de redirección de seguridad CORS nativa de Google
+        fetch(db.negocio.syncKey, {
+            method: 'POST',
+            mode: 'no-cors', // Evita el bloqueo del navegador
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(db)
         }).catch(err => console.log("Espera de red...", err));
@@ -382,26 +390,28 @@
 
     function descargarDeLaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
-        fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`)
-        .then(res => { if(!res.ok) throw new Error("Nuevo canal"); return res.json(); })
+        
+        fetch(db.negocio.syncKey)
+        .then(res => res.json())
         .then(cloudData => {
-            if(cloudData && cloudData.updatedAt) {
+            // Validación estricta estructural antes de sobreescribir la memoria local
+            if(cloudData && cloudData.updatedAt && cloudData.productos && cloudData.clientes) {
                 if(cloudData.updatedAt > db.updatedAt) {
                     db = cloudData;
                     localStorage.setItem('carniceria_db', JSON.stringify(db)); 
                     aplicarConfigUI(); renderClientes(); renderCatalogo();
                 } else if(db.updatedAt > cloudData.updatedAt) {
-                    subirALaNube(); 
+                    subirALaNube();
                 }
             }
-        }).catch(() => subirALaNube());
+        }).catch(err => console.log("Canal de nube en espera..."));
     }
 
     function forzarSincronizacionCloud() {
         if(!navigator.onLine) { alert("No tienes conexión a internet."); return; }
-        if(!db.negocio.syncKey) { alert("Configura una clave de sincronización primero."); return; }
+        if(!db.negocio.syncKey) { alert("Pega la URL de tu Google Sheets primero."); return; }
         descargarDeLaNube();
-        alert("Sincronización forzada en la nube exitosa.");
+        alert("Sincronización en la nube solicitada.");
     }
 
     function guardarDB() {
