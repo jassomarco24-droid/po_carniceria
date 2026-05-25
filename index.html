@@ -56,7 +56,7 @@
     </div>
 
     <div id="vista-caja" class="view">
-        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅ nighttime; Volver</button>
+        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅️ Volver</button>
         <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
             Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
         </div>
@@ -136,8 +136,9 @@
     </div>
 </div>
 
+<div id="ticket-final" style="display: none;" class="ticket-final"></div>
+
 <script>
-    // BASE DE DATOS LOCAL CON ARBITRAJE DE TIEMPO (updatedAt)
     let db = JSON.parse(localStorage.getItem('carniceria_db')) || {
         negocio: { nombre: "7 Toros", contacto: "Distribuidora de Carnes", logo: "", syncKey: "" },
         productos: [{ id: 1, nombre: 'Bistec de Res', precio: 160 }],
@@ -148,7 +149,7 @@
 
     let carrito = [];
     let clienteSeleccionado = null;
-    const BUCKET_CLOUD = "u8X2p7M4qN8K1sR9B5v9pZ"; // Servidor KVDB Público Seguro
+    const BUCKET_CLOUD = "u8X2p7M4qN8K1sR9B5v9pZ"; 
 
     window.onload = () => {
         aplicarConfigUI();
@@ -156,8 +157,6 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
-        
-        // Ejecuta un chequeo automático en la nube cada 15 segundos en segundo plano
         setInterval(() => { if(db.negocio.syncKey) descargarDeLaNube(); }, 15000);
     };
 
@@ -229,7 +228,6 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // ACCIONES DE AGREGAR / ELIMINAR
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -263,7 +261,6 @@
         }
     }
 
-    // RENDERS
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         lista.innerHTML = '';
@@ -279,7 +276,7 @@
                 <div id="historial-${c.id}"></div>
             `;
             compras.slice(-2).reverse().forEach(v => {
-                card.querySelector(`#historial-${c.id}`).innerHTML += `<div class="historial-item"><span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong></div>`;
+                card.querySelector(`#historial-${c.id}`).innerHTML += `<div class="historial-item" onclick="verDetalleVenta(${v.id})"><span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong></div>`;
             });
             lista.appendChild(card);
         });
@@ -304,7 +301,6 @@
         });
     }
 
-    // TRANSACCIÓN
     function iniciarVenta(id, nombre) {
         clienteSeleccionado = { id, nombre };
         document.getElementById('cliente-actual-nombre').innerText = nombre;
@@ -344,7 +340,7 @@
         const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
         db.ventas.push({
             id: Date.now(), clienteId: clienteSeleccionado.id, clienteNombre: clienteSeleccionado.nombre,
-            fecha: document.getElementById('tkt-fecha').innerText, total: total
+            fecha: document.getElementById('tkt-fecha').innerText, items: [...carrito], total: total
         });
         guardarDB(); renderClientes();
     }
@@ -362,11 +358,23 @@
         });
     }
 
-    // MOTOR DE ENLACE MULTIDISPOSITIVO (KVDB + TIMESTAMP ARBITRATION)
+    function verDetalleVenta(idVenta) {
+        const v = db.ventas.find(venta => venta.id === idVenta);
+        if(!v) return;
+        
+        if(!v.items || v.items.length === 0) {
+            alert(`Nota: #${v.id.toString().slice(-6)}\nFecha: ${v.fecha}\nCliente: ${v.clienteNombre}\n---------------------------\nNo hay desglose disponible para esta nota antigua.\n---------------------------\nTOTAL: $${v.total.toFixed(2)}`);
+            return;
+        }
+        
+        let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) x $${i.precio.toFixed(2)} -> $${i.subtotal.toFixed(2)}`).join('\n');
+        alert(`Nota: #${v.id.toString().slice(-6)}\nFecha: ${v.fecha}\nCliente: ${v.clienteNombre}\n---------------------------\n${detalle}\n---------------------------\nTOTAL: $${v.total.toFixed(2)}`);
+    }
+
     function subirALaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
         fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`, {
-            method: 'PUT', // Sobreescritura directa forzada
+            method: 'PUT', 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(db)
         }).catch(err => console.log("Espera de red...", err));
@@ -378,13 +386,12 @@
         .then(res => { if(!res.ok) throw new Error("Nuevo canal"); return res.json(); })
         .then(cloudData => {
             if(cloudData && cloudData.updatedAt) {
-                // El dispositivo con la marca de tiempo más nueva gana
                 if(cloudData.updatedAt > db.updatedAt) {
                     db = cloudData;
-                    localStorage.setItem('carniceria_db', JSON.stringify(db)); // Guarda local directo sin alterar reloj
+                    localStorage.setItem('carniceria_db', JSON.stringify(db)); 
                     aplicarConfigUI(); renderClientes(); renderCatalogo();
                 } else if(db.updatedAt > cloudData.updatedAt) {
-                    subirALaNube(); // Si el local es más nuevo, actualiza la nube
+                    subirALaNube(); 
                 }
             }
         }).catch(() => subirALaNube());
@@ -398,7 +405,7 @@
     }
 
     function guardarDB() {
-        db.updatedAt = Date.now(); // Actualiza el reloj del árbitro de sincronización
+        db.updatedAt = Date.now(); 
         localStorage.setItem('carniceria_db', JSON.stringify(db));
         subirALaNube();
     }
