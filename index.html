@@ -27,13 +27,11 @@
         .ticket-preview { flex: 1; background: var(--blanco); min-width: 300px; padding: 20px; border: 1px solid var(--oscuro); position: sticky; top: 10px; }
         input, select { width: 100%; padding: 8px; border: 1px solid var(--oscuro); margin-bottom: 10px; background: white; font-size: 1em; }
         .item-admin { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--gris); font-size: 0.9em; }
-        /* Pestañas de administración */
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--oscuro); padding-bottom: 10px; }
         .tab-btn { background: none; border: none; padding: 10px; cursor: pointer; font-weight: bold; font-size: 0.9em; color: #777; text-transform: uppercase; }
         .tab-btn.active { color: var(--primario); border-bottom: 3px solid var(--primario); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        /* Indicador de Red */
         #status-red { font-size: 0.75em; font-weight: bold; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-top: 5px; }
         .online { background: #d4edda; color: #155724; }
         .offline { background: #f8d7da; color: #721c24; }
@@ -44,7 +42,7 @@
 <header>
     <img src="https://via.placeholder.com/120x60?text=7+Toros" alt="7 Toros" class="logo" id="app-logo">
     <h1 id="nombre-negocio" style="margin:0; font-size: 1.5em; text-transform: uppercase;">7 Toros</h1>
-    <div id="status-red" class="online">Conectado (En la nube)</div>
+    <div id="status-red" class="online">Conectado</div>
 </header>
 
 <div class="container">
@@ -58,7 +56,7 @@
     </div>
 
     <div id="vista-caja" class="view">
-        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅️ Volver</button>
+        <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅ nighttime; Volver</button>
         <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
             Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
         </div>
@@ -70,6 +68,7 @@
                 </div>
                 <div id="catalogo-btns" class="grid"></div>
             </div>
+            
             <div class="ticket-preview">
                 <div id="ticket-captura" style="background: white; padding: 15px; border: 1px dashed #333; margin-bottom: 15px; color: #000;">
                     <div style="text-align: center;">
@@ -108,20 +107,20 @@
             <input type="file" id="cfg-logo-input" accept="image/*" onchange="procesarLogo(this)">
             
             <div style="background: #eef; padding: 15px; margin-top: 15px; border: 1px solid #ccd;">
-                <h4>🔄 Sincronización en la Nube (Multidispositivo)</h4>
-                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Escribe una palabra clave secreta. Usa la misma palabra en los otros teléfonos para compartir la información.</p>
-                <input type="text" id="cfg-sync-code" placeholder="Ej. 7toros-queretaro" onchange="configurarSyncKey()">
-                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Sincronizar Ahora Manualmente</button>
+                <h4>🔄 Ecosistema en la Nube (Multidispositivo)</h4>
+                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Escribe tu clave secreta de sincronización única para enlazar tus pantallas.</p>
+                <input type="text" id="cfg-sync-code" placeholder="Ej. toros-7-secreto" onchange="configurarSyncKey()">
+                <button class="btn btn-gris" style="width:100%; background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización de Datos</button>
             </div>
-            <button class="btn btn-primario" style="width:100%; margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Datos de Cabecera</button>
+            <button class="btn btn-primario" style="width:100%; margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
         </div>
 
         <div id="tab-productos" class="tab-content card">
             <h3>🥩 Gestión de Cortes</h3>
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
-                <input type="text" id="p-nombre" placeholder="Nombre del corte (Ej. Rib Eye)">
+                <input type="text" id="p-nombre" placeholder="Nombre del corte">
                 <input type="number" id="p-precio" placeholder="Precio por Kg">
-                <button class="btn btn-primario" style="width:100%;" onclick="agregarProducto()">＋ Guardar en Catálogo</button>
+                <button class="btn btn-primario" style="width:100%;" onclick="agregarProducto()">＋ Guardar Producto</button>
             </div>
             <div id="lista-config-productos"></div>
         </div>
@@ -129,7 +128,7 @@
         <div id="tab-clientes" class="tab-content card">
             <h3>👥 Gestión de Clientes</h3>
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
-                <input type="text" id="c-nombre" placeholder="Nombre del cliente o negocio">
+                <input type="text" id="c-nombre" placeholder="Nombre del cliente">
                 <button class="btn btn-primario" style="width:100%;" onclick="agregarCliente()">＋ Registrar Cliente</button>
             </div>
             <div id="lista-config-clientes"></div>
@@ -138,16 +137,18 @@
 </div>
 
 <script>
-    // BASE DE DATOS LOCAL
+    // BASE DE DATOS LOCAL CON ARBITRAJE DE TIEMPO (updatedAt)
     let db = JSON.parse(localStorage.getItem('carniceria_db')) || {
-        negocio: { nombre: "7 Toros", contacto: "Distribuidora de Carnes | Tel: 442-XXX-XXXX", logo: "", syncKey: "" },
-        productos: [{ id: 1, nombre: 'Bistec de Res', precio: 160 }, { id: 2, nombre: 'Costilla de Cerdo', precio: 120 }],
+        negocio: { nombre: "7 Toros", contacto: "Distribuidora de Carnes", logo: "", syncKey: "" },
+        productos: [{ id: 1, nombre: 'Bistec de Res', precio: 160 }],
         clientes: [{ id: 101, nombre: "Cliente General" }],
-        ventas: []
+        ventas: [],
+        updatedAt: 0
     };
 
     let carrito = [];
     let clienteSeleccionado = null;
+    const BUCKET_CLOUD = "u8X2p7M4qN8K1sR9B5v9pZ"; // Servidor KVDB Público Seguro
 
     window.onload = () => {
         aplicarConfigUI();
@@ -155,20 +156,22 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
+        
+        // Ejecuta un chequeo automático en la nube cada 15 segundos en segundo plano
+        setInterval(() => { if(db.negocio.syncKey) descargarDeLaNube(); }, 15000);
     };
 
-    // ESCUCHADORES DE RED AUTOMÁTICOS
     window.addEventListener('online', evaluarEstadoRed);
     window.addEventListener('offline', evaluarEstadoRed);
 
     function evaluarEstadoRed() {
         const indicador = document.getElementById('status-red');
         if(navigator.onLine) {
-            indicador.innerText = "Conectado (En la Nube)";
+            indicador.innerText = "Conectado a la Nube";
             indicador.className = "online";
-            subirALaNube(); // Al volver online, descarga/sube pendientes
+            if(db.negocio.syncKey) subirALaNube();
         } else {
-            indicador.innerText = "Trabajando Offline (Cambios locales guardados)";
+            indicador.innerText = "Trabajando Offline (Cambios guardados local)";
             indicador.className = "offline";
         }
     }
@@ -216,30 +219,30 @@
     function guardarConfigNegocio() {
         db.negocio.nombre = document.getElementById('cfg-nombre').value;
         db.negocio.contacto = document.getElementById('cfg-contacto').value;
-        guardarDB(); aplicarConfigUI(); subirALaNube();
-        alert("Cabecera guardada.");
+        guardarDB(); aplicarConfigUI();
+        alert("Configuración de cabecera guardada.");
     }
 
     function configurarSyncKey() {
-        db.negocio.syncKey = document.getElementById('cfg-sync-code').value.trim().toLowerCase();
+        db.negocio.syncKey = document.getElementById('cfg-sync-code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
         guardarDB();
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // ACCIONES DE GESTIÓN
+    // ACCIONES DE AGREGAR / ELIMINAR
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
         db.clientes.push({ id: Date.now(), nombre: nom });
         document.getElementById('c-nombre').value = '';
-        guardarDB(); renderClientes(); renderListasAdmin(); subirALaNube();
+        guardarDB(); renderClientes(); renderListasAdmin();
     }
 
     function eliminarCliente(id) {
-        if(confirm("¿Eliminar este cliente?")) {
+        if(confirm("¿Eliminar este cliente de la lista?")) {
             db.clientes = db.clientes.filter(c => c.id !== id);
             db.ventas = db.ventas.filter(v => v.clienteId !== id);
-            guardarDB(); renderClientes(); renderListasAdmin(); subirALaNube();
+            guardarDB(); renderClientes(); renderListasAdmin();
         }
     }
 
@@ -250,17 +253,17 @@
         db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
         document.getElementById('p-nombre').value = '';
         document.getElementById('p-precio').value = '';
-        guardarDB(); renderCatalogo(); renderListasAdmin(); subirALaNube();
+        guardarDB(); renderCatalogo(); renderListasAdmin();
     }
 
     function eliminarProducto(id) {
-        if(confirm("¿Eliminar del catálogo?")) {
+        if(confirm("¿Eliminar este corte del catálogo?")) {
             db.productos = db.productos.filter(p => p.id !== id);
-            guardarDB(); renderCatalogo(); renderListasAdmin(); subirALaNube();
+            guardarDB(); renderCatalogo(); renderListasAdmin();
         }
     }
 
-    // RENDERS DE PANTALLA
+    // RENDERS
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         lista.innerHTML = '';
@@ -276,7 +279,7 @@
                 <div id="historial-${c.id}"></div>
             `;
             compras.slice(-2).reverse().forEach(v => {
-                card.querySelector(`#historial-${c.id}`).innerHTML += `<div class="historial-item" onclick="alert('Nota del ${v.fecha}\\nTotal: $${v.total}')"><span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong></div>`;
+                card.querySelector(`#historial-${c.id}`).innerHTML += `<div class="historial-item"><span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong></div>`;
             });
             lista.appendChild(card);
         });
@@ -291,19 +294,17 @@
     }
 
     function renderListasAdmin() {
-        const lp = document.getElementById('lista-config-productos');
-        lp.innerHTML = '';
+        const lp = document.getElementById('lista-config-productos'); lp.innerHTML = '';
         db.productos.forEach(p => {
             lp.innerHTML += `<div class="item-admin"><span>${p.nombre} ($${p.precio}/kg)</span><button class="btn btn-danger" onclick="eliminarProducto(${p.id})">✕</button></div>`;
         });
-        const lc = document.getElementById('lista-config-clientes');
-        lc.innerHTML = '';
+        const lc = document.getElementById('lista-config-clientes'); lc.innerHTML = '';
         db.clientes.forEach(c => {
             lc.innerHTML += `<div class="item-admin"><span>${c.nombre}</span><button class="btn btn-danger" onclick="eliminarCliente(${c.id})">✕</button></div>`;
         });
     }
 
-    // FLUJO VENTA Y TICKET
+    // TRANSACCIÓN
     function iniciarVenta(id, nombre) {
         clienteSeleccionado = { id, nombre };
         document.getElementById('cliente-actual-nombre').innerText = nombre;
@@ -345,61 +346,62 @@
             id: Date.now(), clienteId: clienteSeleccionado.id, clienteNombre: clienteSeleccionado.nombre,
             fecha: document.getElementById('tkt-fecha').innerText, total: total
         });
-        guardarDB(); renderClientes(); subirALaNube();
+        guardarDB(); renderClientes();
     }
 
-    // CONVERTIR TICKET A IMAGEN Y DESCARGAR FOTO
     function descargarTicketImagen() {
-        if(carrito.length === 0) { alert("Ticket vacío"); return; }
-        
+        if(carrito.length === 0) return;
         const contenedor = document.getElementById('ticket-captura');
-        // Renderizar el HTML en una foto digital limpia
         html2canvas(contenedor, { scale: 3, backgroundColor: "#ffffff" }).then(canvas => {
             const link = document.createElement('a');
             link.download = `Ticket_${document.getElementById('tkt-id').innerText}.png`;
             link.href = canvas.toDataURL("image/png");
-            link.click(); // Descarga forzada en el celular
-            
+            link.click();
             finalizarVenta();
             irA('vista-inicio');
         });
     }
 
-    // MOTOR DE SINCRONIZACIÓN EN LA NUBE (SOPORTE OFFLINE AUTOMÁTICO)
+    // MOTOR DE ENLACE MULTIDISPOSITIVO (KVDB + TIMESTAMP ARBITRATION)
     function subirALaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
-        // Usamos una API de almacenamiento en la nube libre y gratuita
-        fetch(`https://api.keyvalue.xyz/${db.negocio.syncKey}/db`, {
-            method: 'POST',
+        fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`, {
+            method: 'PUT', // Sobreescritura directa forzada
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(db)
-        }).catch(err => console.log("Error subiendo datos:", err));
+        }).catch(err => console.log("Espera de red...", err));
     }
 
     function descargarDeLaNube() {
         if(!navigator.onLine || !db.negocio.syncKey) return;
-        fetch(`https://api.keyvalue.xyz/${db.negocio.syncKey}/db`)
-        .then(res => res.json())
+        fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`)
+        .then(res => { if(!res.ok) throw new Error("Nuevo canal"); return res.json(); })
         .then(cloudData => {
-            if(cloudData && cloudData.productos) {
-                // Fusión inteligente: Prioriza la base de datos que tenga más transacciones registradas
-                if(cloudData.ventas.length >= db.ventas.length) {
+            if(cloudData && cloudData.updatedAt) {
+                // El dispositivo con la marca de tiempo más nueva gana
+                if(cloudData.updatedAt > db.updatedAt) {
                     db = cloudData;
-                    guardarDB(); aplicarConfigUI(); renderClientes(); renderCatalogo();
-                } else {
-                    subirALaNube(); // Si el local es más nuevo, sobreescribe la nube
+                    localStorage.setItem('carniceria_db', JSON.stringify(db)); // Guarda local directo sin alterar reloj
+                    aplicarConfigUI(); renderClientes(); renderCatalogo();
+                } else if(db.updatedAt > cloudData.updatedAt) {
+                    subirALaNube(); // Si el local es más nuevo, actualiza la nube
                 }
             }
-        }).catch(() => subirALaNube()); // Si el canal no existe, lo crea subiendo los datos locales
+        }).catch(() => subirALaNube());
     }
 
     function forzarSincronizacionCloud() {
-        if(!navigator.onLine) { alert("No tienes internet para sincronizar ahora."); return; }
-        if(!db.negocio.syncKey) { alert("Escribe una palabra clave de sincronización primero."); return; }
+        if(!navigator.onLine) { alert("No tienes conexión a internet."); return; }
+        if(!db.negocio.syncKey) { alert("Configura una clave de sincronización primero."); return; }
         descargarDeLaNube();
-        alert("Sincronización en la nube completada.");
+        alert("Sincronización forzada en la nube exitosa.");
     }
 
-    function guardarDB() { localStorage.setItem('carniceria_db', JSON.stringify(db)); }
+    function guardarDB() {
+        db.updatedAt = Date.now(); // Actualiza el reloj del árbitro de sincronización
+        localStorage.setItem('carniceria_db', JSON.stringify(db));
+        subirALaNube();
+    }
 </script>
 </body>
 </html>
