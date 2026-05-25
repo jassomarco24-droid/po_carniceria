@@ -139,8 +139,9 @@
 <div id="ticket-final" style="display: none;"></div>
 
 <script>
+    // Registro del Service Worker forzando actualización de versión (?v=2)
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log("Modo app listo"));
+        navigator.serviceWorker.register('./sw.js?v=2').catch(err => console.log("Modo app listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
