@@ -3,61 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>7 Toros - POS</title>
+    <title>7 Toros - POS Pro</title>
     <style>
         :root {
-            --primario: #c21807; /* Naranja Cempasúchil / Rojo Óxido */
+            --primario: #c21807; /* Rojo Óxido / Cempasúchil */
             --oscuro: #1a1a1a;
             --gris-claro: #f7f7f7;
             --borde: #e5e5e5;
             --blanco: #ffffff;
         }
         
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--gris-claro); margin: 0; padding: 0; color: var(--oscuro); }
         
-        /* Layout Estilo Minimalista */
+        /* Layout */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         header { background: var(--blanco); padding: 20px; text-align: center; border-bottom: 2px solid var(--oscuro); margin-bottom: 20px; }
-        .logo { max-height: 80px; width: auto; object-fit: contain; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; }
+        .logo { max-height: 90px; width: auto; object-fit: contain; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; }
         
-        /* Componentes de Interfaz */
-        .btn { border: 1px solid var(--oscuro); padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85em; transition: all 0.2s ease; }
+        /* Botones */
+        .btn { border: 1px solid var(--oscuro); padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85em; transition: all 0.1s ease; }
         .btn-primario { background: var(--primario); color: white; border-color: var(--primario); }
         .btn-primario:hover { background: var(--oscuro); border-color: var(--oscuro); }
-        .btn-verde { background: #121212; color: white; border-color: var(--oscuro); }
         .btn-gris { background: transparent; color: var(--oscuro); border: 1px solid var(--oscuro); }
         .btn-gris:hover { background: #eee; }
+        .btn-danger { background: #ffdddd; color: #cc0000; border-color: #cc0000; padding: 6px 10px; font-size: 0.75em; }
         .btn:active { transform: scale(0.97); }
 
+        /* Vistas */
         .view { display: none; animation: fadeIn 0.2s ease-out; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-        .card { background: var(--blanco); padding: 20px; border-radius: 0px; border: 1px solid var(--borde); box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; }
-        .historial-item { background: var(--gris-claro); padding: 10px; font-size: 0.85em; border: 1px solid var(--borde); margin-top: 8px; cursor: pointer; font-family: monospace; display: flex; justify-content: space-between; }
+        .card { background: var(--blanco); padding: 20px; border: 1px solid var(--borde); margin-bottom: 16px; }
+        .historial-item { background: var(--gris-claro); padding: 10px; font-size: 0.85em; border: 1px solid var(--borde); margin-top: 8px; cursor: pointer; display: flex; justify-content: space-between; }
 
         .flex-pos { display: flex; flex-wrap: wrap; gap: 24px; }
         .catalogo { flex: 2; min-width: 320px; }
-        .ticket-preview { flex: 1; background: var(--blanco); min-width: 320px; padding: 24px; border: 1px solid var(--oscuro); border-radius: 0px; position: sticky; top: 16px; }
+        .ticket-preview { flex: 1; background: var(--blanco); min-width: 320px; padding: 24px; border: 1px solid var(--oscuro); position: sticky; top: 16px; }
 
-        /* Estilos de Impresión Limpios */
+        /* REGLAS DE IMPRESIÓN CORREGIDAS (Oculta la app y fuerza solo el ticket) */
         @media print {
-            body * { visibility: hidden; }
-            #ticket-final, #ticket-final * { visibility: visible; }
-            #ticket-final { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+            body > *:not(#ticket-final) { display: none !important; }
+            #ticket-final { display: block !important; width: 100%; }
         }
-        .ticket-final { font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.4; color: #000; }
-        .hidden { display: none; }
         
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid var(--oscuro); border-radius: 0px; background: var(--blanco); outline: none; font-size: 1em; }
+        .ticket-final { font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.4; color: #000; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid var(--oscuro); background: var(--blanco); outline: none; font-size: 1em; }
+        .item-admin { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gris-claro); }
     </style>
 </head>
 <body>
 
 <header>
-    <img src="data:image/jpeg;base64,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O7k3jZaqgnmaEObF/TwQmm8G3ZHof5woaLEnZgVPZQ4bTRQ6pCo9U1QETSyy7G8oTfwRrGP4kCaySgi5hc16R3+YHV+kQs0wWcY/7jspQRmEbfwudgZTmQpU9qfstd+K/2Tki18y3xbNQxBpzsHLMOSw6NqsGJFsUmysTq+rgac/xa+lan+dgcnMmWI2qmKHduHYNWXfM+wzwnQhLl4qhVB6Af3F6C6Ls+T2RyYVOa7JRtrhBXwQf5v7G1lPiNCdBgLZUr+abNImt9jEqJkIVaqoKI5vB8yR7Lbv7aZjbEHKhsvZez/gX+LTBoH9n1dp7M+TFf/nC6q7q6rnGmaRodDQ6Gh0NDoaBomYZxnmeZ5nmcZxnmeZ5nn//2gAMAwEAAgADAAAAEDzzzzzzzzzzz/8/wDvP/8Az/8A/wD/AP8A/wD/AP8A/wAkJJ14qtb733/AP8A/wD/AP8A/wDzLPQ18aST33333333332szr66qhTlX3333333z34jX/767o5/33333yXSXjmNfSzzcaX/AN99d9qLTTyBr7xIKg6wB9f999fvnG979FJ3jyO4e99997mpgvAmOsbF1OlC/wD/AH333332xOo8/uCtOj1/33333333TcV73333333333333338s53/AN99999999999999PO99999999999999999pd999999999999999w4xxw5xwwyxxx3z88x88/8QAHREAAgICAwEAAAAAAAAAAAAAAREAQCFQECAwYP/aAAgBAwEBPxD4Q+q7gcjGWzVUBQmMM0QmSB1ZBIvOhn4N63G0AAIwnBM+hbDOQKaDHOWhDzTcIkJzxFqQuSOlAhpfY7//xAAcEQACAgMBAQAAAAAAAAAAAAAAEQFRECBAMFD/2gAIAQIBAT8Q7Zldjv8AuWGpcJnGTOPOATy8hqYDoQsuWAuHsZ9gBHKyxozsA8IWiN6EgmZ1w3F5PCMCvUgqPqi5QWhaFoQWhaEEEFFoWhaEFoWhaFoWj//EACIQAAMAAAYBBQAAAAAAAAAAAAABYRFAUGBw8BAgITAxQf/aAAgBAQABPxDhXbbbbbbbbbbbaFVm2tk2kG898915w1888y11gPWxqs+jOqx8LKGssswobhw9Ta5T+d1VGmFUA0GumXLlpmTCQjE826yHDYojoFLvenV8cDs49iJb4XA3rBJAbGX0YKrdikVAytaO0PV6D97tdcGsl3j1WdDBOwrBaqqSzkpRO+KIXfNtHmXv0oZJmhEs0lYC3J8FNUrq2zrk6mLLp/pbcfuyJVpxl2MWVTLURqZcPoWRLfvtYriDummyF503whMEZteKatO/1bRB9y3Cz8pmjP2QJiKMPPf3hbIqRbiQ3hJ1H25XN1s97WXDUQme1UmTdhD23MNsTkAGjEed03Zk5D+vKchHk80FgBwbnx/QRTVzRTNzuxGLrSiSk9q7njmWzC/DWvOE1htICbh5Sr9C8QoqzrtMLmf56NuUl/3GRmLqTkzcMqYZK5/NiA+ZJKN3VAya93lB4/brtTL1Njm5LTOnCJhNxJI0sGfnZsu114SMgNANmS2V5nb2rsmv2MoNKiHs9XJWVmyYbU/jpTcQkSBwrrfNVIlrvNatIuSq2jXxDQPpLOKx2xinFopbgxoJCZPfWvzb/uQG5lSmOepSo0CyID5IavvKGWeOQfilKEm5wcnCToM8rrUKiuQdRfgJL2hGpzQSfrr8xGuyDtlh+Jv2WM78S8oiyqZf4MXIurXpYwTwX6i8AjsHUNxUv9Evxc4gleAJQAtuXRKVwP3cb0QhYy4dykfVbaVorcLwJImkFLgd0iBnO0LyFalYMkERsLqKx0L2pcdrwZE8MAGUed0utvvasuTk1dF0VRYsWLFiqLoqixYsVRdF0XRdeB3I6FkyIiiA22A22//9k=" alt="Logo 7 Toros" class="logo">
+    <img src="data:image/jpeg;base64,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" alt="Logo 7 Toros" class="logo">
     <h1 id="nombre-negocio" style="margin:0; font-size: 1.6em; text-transform: uppercase; letter-spacing: 1px;">7 Toros</h1>
 </header>
 
@@ -91,8 +91,7 @@
 
             <div class="ticket-preview" id="seccion-ticket">
                 <h3 style="text-align:center; border-bottom: 1px dashed var(--oscuro); padding-bottom:10px; text-transform: uppercase; margin-top: 0;">Resumen de Compra</h3>
-                <div id="carrito-items" style="min-height: 180px; margin-bottom: 15px; padding-top: 10px;">
-                    </div>
+                <div id="carrito-items" style="min-height: 180px; margin-bottom: 15px; padding-top: 10px;"></div>
                 <div style="border-top: 1px solid var(--oscuro); padding-top: 15px;">
                     <h2 style="display:flex; justify-content: space-between; margin: 0; font-weight: 700;">TOTAL: <span id="total-caja" style="color: var(--primario);">$0.00</span></h2>
                 </div>
@@ -104,36 +103,44 @@
     <div id="vista-config" class="view">
         <button class="btn btn-gris" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
         
-        <div class="card" style="margin-bottom: 24px; border: 1px solid var(--oscuro);">
+        <div class="card" style="border: 1px solid var(--oscuro);">
             <h3 style="margin-top:0; text-transform: uppercase;">🏗️ Datos del Establecimiento</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <input type="text" id="cfg-nombre" placeholder="Nombre Comercial">
-                <input type="text" id="cfg-contacto" placeholder="Teléfono / Dirección / Sucursal">
+                <input type="text" id="cfg-contacto" placeholder="Teléfono / Dirección">
             </div>
-            <button class="btn btn-primario" onclick="guardarConfigNegocio()" style="margin-top:15px;">Guardar Cambios de Cabecera</button>
+            <button class="btn btn-primario" onclick="guardarConfigNegocio()" style="margin-top:15px;">Guardar Cabecera</button>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 20px;">
             <div class="card">
-                <h3 style="margin-top:0; text-transform: uppercase; border-bottom: 1px solid var(--borde); padding-bottom: 8px;">🥩 Añadir Producto / Corte</h3>
-                <input type="text" id="p-nombre" placeholder="Ej. Rib Eye de Res" style="margin-bottom:12px;">
-                <input type="number" id="p-precio" placeholder="Precio de Lista por Kg" style="margin-bottom:16px;">
-                <button class="btn btn-primario" style="width: 100%;" onclick="agregarProducto()">Guardar en Catálogo</button>
+                <h3 style="margin-top:0; text-transform: uppercase; border-bottom: 1px solid var(--oscuro); padding-bottom: 8px;">🥩 Catálogo de Cortes</h3>
+                <div style="margin-bottom: 20px; background: var(--gris-claro); padding: 10px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.85em; text-transform: uppercase;">Añadir Nuevo:</h4>
+                    <input type="text" id="p-nombre" placeholder="Ej. Rib Eye de Res" style="margin-bottom:8px;">
+                    <input type="number" id="p-precio" placeholder="Precio x Kg" style="margin-bottom:12px;">
+                    <button class="btn btn-primario" style="width: 100%; padding: 8px;" onclick="agregarProducto()">Guardar Producto</button>
+                </div>
+                <div id="lista-config-productos" style="max-h: 300px; overflow-y: auto;"></div>
             </div>
+
             <div class="card">
-                <h3 style="margin-top:0; text-transform: uppercase; border-bottom: 1px solid var(--borde); padding-bottom: 8px;">👤 Dar de Alta Cliente</h3>
-                <input type="text" id="c-nombre" placeholder="Nombre completo o Negocio" style="margin-bottom:16px;">
-                <button class="btn btn-primario" style="width: 100%;" onclick="agregarCliente()">Registrar Cliente</button>
+                <h3 style="margin-top:0; text-transform: uppercase; border-bottom: 1px solid var(--oscuro); padding-bottom: 8px;">👤 Registro de Clientes</h3>
+                <div style="margin-bottom: 20px; background: var(--gris-claro); padding: 10px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.85em; text-transform: uppercase;">Alta de Cliente:</h4>
+                    <input type="text" id="c-nombre" placeholder="Nombre completo o Negocio" style="margin-bottom:12px;">
+                    <button class="btn btn-primario" style="width: 100%; padding: 8px;" onclick="agregarCliente()">Registrar Cliente</button>
+                </div>
+                <div id="lista-config-clientes" style="max-h: 300px; overflow-y: auto;"></div>
             </div>
         </div>
     </div>
 
 </div>
 
-<div id="ticket-final" class="hidden ticket-final"></div>
+<div id="ticket-final" style="display: none;" class="ticket-final"></div>
 
 <script>
-    // BASE DE DATOS LOCAL SEGURA DE "7 TOROS"
     let db = JSON.parse(localStorage.getItem('carniceria_db')) || {
         negocio: { nombre: "7 Toros", contacto: "Distribuidora de Carnes | Tel: 442-XXX-XXXX" },
         productos: [
@@ -154,11 +161,13 @@
         aplicarConfig();
         renderClientes();
         renderCatalogo();
+        renderListasConfig();
     };
 
     function irA(vistaId) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById(vistaId).classList.add('active');
+        if(vistaId === 'vista-config') renderListasConfig();
     }
 
     function aplicarConfig() {
@@ -172,9 +181,10 @@
         db.negocio.contacto = document.getElementById('cfg-contacto').value;
         guardarDB();
         aplicarConfig();
-        alert("Configuración de ticket guardada.");
+        alert("Cabecera del ticket actualizada.");
     }
 
+    // GESTIÓN DE CLIENTES
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -182,6 +192,17 @@
         document.getElementById('c-nombre').value = '';
         guardarDB();
         renderClientes();
+        renderListasConfig();
+    }
+
+    function eliminarCliente(id) {
+        if(confirm("¿Seguro que deseas borrar este cliente? Se perderá su historial.")) {
+            db.clientes = db.clientes.filter(c => c.id !== id);
+            db.ventas = db.ventas.filter(v => v.clienteId !== id); // Limpia ventas huerfanas
+            guardarDB();
+            renderClientes();
+            renderListasConfig();
+        }
     }
 
     function renderClientes() {
@@ -194,27 +215,26 @@
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <h3 style="margin-top:0; font-weight: 600; text-transform: uppercase; font-size:1.1em;">${c.nombre}</h3>
-                <p style="font-size:0.85em; color:#555; margin-bottom:15px;">Consumo Total: <strong>$${totalComprado.toFixed(2)}</strong></p>
+                <h3 style="margin-top:0; font-weight: 600; text-transform: uppercase;">${c.nombre}</h3>
+                <p style="font-size:0.85em; color:#555; margin-bottom:15px;">Historial: <strong>$${totalComprado.toFixed(2)}</strong></p>
                 <button class="btn btn-primario" style="width:100%" onclick="iniciarVenta(${c.id}, '${c.nombre}')">Abrir Cuenta</button>
                 <div style="margin-top: 12px; border-top: 1px dashed var(--borde); padding-top: 8px;">
-                    <span style="font-size:0.75em; font-weight:bold; text-transform:uppercase; color:#777;">Últimas Notas:</span>
                     <div id="historial-${c.id}"></div>
                 </div>
             `;
             
-            compras.slice(-3).reverse().forEach(v => {
+            compras.slice(-2).reverse().forEach(v => {
                 const h = document.createElement('div');
                 h.className = 'historial-item';
                 h.innerHTML = `<span>${v.fecha.split(' ')[0]}</span> <strong>$${v.total.toFixed(2)}</strong>`;
                 h.onclick = () => verDetalleVenta(v);
                 card.querySelector(`#historial-${c.id}`).appendChild(h);
             });
-            
             lista.appendChild(card);
         });
     }
 
+    // GESTIÓN DE PRODUCTOS
     function agregarProducto() {
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
@@ -222,9 +242,18 @@
         db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
         guardarDB();
         renderCatalogo();
+        renderListasConfig();
         document.getElementById('p-nombre').value = '';
         document.getElementById('p-precio').value = '';
-        alert("Corte agregado al catálogo con éxito.");
+    }
+
+    function eliminarProducto(id) {
+        if(confirm("¿Deseas eliminar este producto del catálogo?")) {
+            db.productos = db.productos.filter(p => p.id !== id);
+            guardarDB();
+            renderCatalogo();
+            renderListasConfig();
+        }
     }
 
     function renderCatalogo() {
@@ -241,6 +270,30 @@
         });
     }
 
+    // RENDERIZAR EDICIÓN/BORRADO EN PANTALLA CONFIGURACIÓN
+    function renderListasConfig() {
+        const listaProds = document.getElementById('lista-config-productos');
+        listaProds.innerHTML = '';
+        db.productos.forEach(p => {
+            listaProds.innerHTML += `
+                <div class="item-admin">
+                    <span>${p.nombre} ($${p.precio}/kg)</span>
+                    <button class="btn btn-danger" onclick="eliminarProducto(${p.id})">Borrar</button>
+                </div>`;
+        });
+
+        const listaClientes = document.getElementById('lista-config-clientes');
+        listaClientes.innerHTML = '';
+        db.clientes.forEach(c => {
+            listaClientes.innerHTML += `
+                <div class="item-admin">
+                    <span>${c.nombre}</span>
+                    <button class="btn btn-danger" onclick="eliminarCliente(${c.id})">Borrar</button>
+                </div>`;
+        });
+    }
+
+    // FLUJO DE TRANSACCIÓN
     function iniciarVenta(id, nombre) {
         clienteSeleccionado = { id, nombre };
         document.getElementById('cliente-actual-nombre').innerText = nombre;
@@ -251,10 +304,7 @@
 
     function añadirAlCarrito(prod) {
         const peso = parseFloat(document.getElementById('peso-input').value);
-        if(isNaN(peso) || peso <= 0) {
-            alert("Favor de ingresar un pesaje válido.");
-            return;
-        }
+        if(isNaN(peso) || peso <= 0) return;
         carrito.push({ ...prod, peso, subtotal: prod.precio * peso });
         document.getElementById('peso-input').value = "1.000";
         actualizarCarritoUI();
@@ -266,15 +316,15 @@
         let t = 0;
         
         if(carrito.length === 0) {
-            lista.innerHTML = '<p style="color:#aaa; text-align:center; padding-top:40px;">No hay cortes en el ticket.</p>';
+            lista.innerHTML = '<p style="color:#aaa; text-align:center; padding-top:40px;">Ticket Vacío.</p>';
             document.getElementById('total-caja').innerText = '$0.00';
             return;
         }
 
-        carrito.forEach((item, index) => {
+        carrito.forEach(item => {
             t += item.subtotal;
             lista.innerHTML += `
-                <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
                     <span><strong>${item.peso.toFixed(3)} Kg</strong> - ${item.nombre}</span>
                     <span>$${item.subtotal.toFixed(2)}</span>
                 </div>`;
@@ -312,8 +362,8 @@
             </tr>`).join('');
 
         div.innerHTML = `
-            <div style="text-align:center; width:280px; margin:0 auto; padding:10px;">
-                <h3 style="margin:0; text-transform:uppercase; font-size:16px;">${db.negocio.nombre}</h3>
+            <div style="text-align:center; width:280px; margin:0 auto; padding:10px; color:#000;">
+                <h3 style="margin:0; text-transform:uppercase; font-size:15px;">${db.negocio.nombre}</h3>
                 <p style="font-size:11px; margin:4px 0;">${db.negocio.contacto}</p>
                 <p style="margin:0;">==============================</p>
                 <p align="left" style="margin:5px 0; font-size:11px;">
@@ -323,12 +373,12 @@
                 </p>
                 <p style="margin:0;">==============================</p>
                 <table width="100%" style="font-size:11px;">
-                    <tr><th align="left">Corte</th><th align="center">Kg</th><th align="right">Importe</th></tr>
+                    <tr><th align="left">Corte</th><th align="center">Kg</th><th align="right">Total</th></tr>
                     ${itemsHtml}
                 </table>
                 <p style="margin:0;">==============================</p>
-                <h3 align="right" style="margin:5px 0; font-size:14px;">TOTAL: $${v.total.toFixed(2)}</h3>
-                <p style="margin-top:15px; font-size:11px;">*** NOTA DE CONTROL INTERNO ***</p>
+                <h3 align="right" style="margin:5px 0; font-size:13px;">TOTAL: $${v.total.toFixed(2)}</h3>
+                <p style="margin-top:15px; font-size:10px;">*** NOTA DE CONTROL INTERNO ***</p>
             </div>
         `;
         window.print();
@@ -336,7 +386,7 @@
 
     function verDetalleVenta(v) {
         let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) -> $${i.subtotal.toFixed(2)}`).join('\n');
-        alert(`Transacción: #${v.id}\nFecha: ${v.fecha}\nCliente: ${v.clienteNombre}\n----------------------------\n${detalle}\n----------------------------\nTOTAL EN CUENTA: $${v.total.toFixed(2)}`);
+        alert(`Nota: #${v.id}\nCliente: ${v.clienteNombre}\n----------------------------\n${detalle}\n----------------------------\nTOTAL: $${v.total.toFixed(2)}`);
     }
 
     function guardarDB() {
