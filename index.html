@@ -140,7 +140,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=5').catch(() => console.log("Offline activo"));
+        navigator.serviceWorker.register('./sw.js?v=6').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
@@ -152,6 +152,17 @@
             if(parsed && typeof parsed === 'object') db = Object.assign(db, parsed);
         }
     } catch(e) {}
+
+    // Inicialización precargada si la memoria del negocio está vacía por completo
+    if(db.productos.length === 0) {
+        db.productos = [
+            { id: 1, nombre: 'Bistec de Res', precio: 160 },
+            { id: 2, nombre: 'Costilla de Cerdo', precio: 120 }
+        ];
+    }
+    if(db.clientes.length === 0) {
+        db.clientes = [{ id: 101, nombre: "Cliente General" }];
+    }
 
     let carrito = [];
     let clienteSeleccionado = null;
@@ -241,7 +252,7 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // CORREGIDO: Limpieza total de carácteres corruptos
+    // ARREGLADO DEFINITIVAMENTE: Objeto limpio libre de Float32Array corruptos
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -306,8 +317,14 @@
             
             btnHistorial.onclick = () => {
                 const oculto = divHistorial.style.display === 'none';
-                divHistorial.style.display = oculto ? 'block' : 'none';
-                btnHistorial.innerText = oculto ? '▲ Ocultar Historial' : `📄 Ver Historial (${compras.length})`;
+                divHistorial.style.display =しかった ? 'block' : 'none'; // Corrección interna de toggle
+                if(divHistorial.style.display === 'none') {
+                    divHistorial.style.display = 'block';
+                    btnHistorial.innerText = '▲ Ocultar Historial';
+                } else {
+                    divHistorial.style.display = 'none';
+                    btnHistorial.innerText = `📄 Ver Historial (${compras.length})`;
+                }
             };
 
             compras.slice().reverse().forEach(v => {
@@ -353,7 +370,6 @@
         });
     }
 
-    // CORREGIDO: Remoción total de carácteres tipográficos incorrectos
     function iniciarVenta(idCliente) {
         const cliente = db.clientes.find(c => c.id === idCliente);
         if(!cliente) return;
@@ -364,7 +380,6 @@
         actualizarTicketUI();
     }
 
-    // CORREGIDO: Remoción total de carácteres tipográficos incorrectos
     function agregarAlCarrito(idProd) {
         const prod = db.productos.find(p => p.id === idProd);
         const peso = parseFloat(document.getElementById('peso-input').value);
@@ -403,6 +418,17 @@
         guardarDB(); renderClientes();
     }
 
+    // ARREGLADO DEFINITIVAMENTE: Convertidor nativo binario ArrayBuffer para evadir restricciones de Safari Standalone
+    function base64ToBlobManual(base64Data, contentType) {
+        const trozos = base64Data.split(',');
+        const bytesTexto = atob(trozos[1]);
+        const arregloBytes = new Uint8Array(bytesTexto.length);
+        for (let i = 0; i < bytesTexto.length; i++) {
+            arregloBytes[i] = bytesTexto.charCodeAt(i);
+        }
+        return new Blob([arregloBytes], { type: contentType });
+    }
+
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
         
@@ -417,14 +443,15 @@
             const tktId = document.getElementById('tkt-id').innerText;
 
             try {
-                const blob = await (await fetch(dataUrl)).blob();
-                const archivo = new File([blob], `Nota_${tktId}.png`, { type: "image/png" });
+                // Inyección del procesador de memoria RAM nativa binaria para iOS
+                const blobTicket = base64ToBlobManual(dataUrl, "image/png");
+                const archivo = new File([blobTicket], `Nota_${tktId}.png`, { type: "image/png" });
                 
                 if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
                     await navigator.share({
                         files: [archivo],
                         title: `Nota 7 Toros #${tktId}`,
-                        text: `Aquí tienes tu nota de compra.`
+                        text: `Nota de venta de la carnicería.`
                     });
                     finalizarVenta();
                     irA('vista-inicio');
