@@ -50,7 +50,7 @@
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
             <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙️ Panel de Control</button>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙ Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
@@ -140,7 +140,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=12').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=30').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
@@ -149,7 +149,9 @@
         const localData = localStorage.getItem('carniceria_db');
         if(localData) {
             const parsed = JSON.parse(localData);
-            if(parsed && typeof parsed === 'object') db = Object.assign(db, parsed);
+            if(parsed && typeof parsed === 'object') {
+                db = Object.assign(db, parsed);
+            }
         }
     } catch(e) {}
 
@@ -290,6 +292,19 @@
         return limpia.split(' ')[0] || limpia;
     }
 
+    function toggleHistorial(id, btn) {
+        const divHistorial = document.getElementById('historial-' + id);
+        if(!divHistorial) return;
+        
+        if(divHistorial.style.display === 'none' || divHistorial.style.display === '') {
+            divHistorial.style.display = 'block';
+            btn.innerText = '▲ Ocultar Historial';
+        } else {
+            divHistorial.style.display = 'none';
+            btn.innerText = '📄 Ver Historial';
+        }
+    }
+
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -311,19 +326,9 @@
             card.querySelector('.btn-abrir-cuenta').onclick = () => iniciarVenta(c.id);
             
             const btnHistorial = card.querySelector('.btn-ver-historial');
-            const divHistorial = card.querySelector(`#historial-${c.id}`);
-            
-            btnHistorial.onclick = () => {
-                const oculto = divHistorial.style.display === 'none';
-                if(oculto) {
-                    divHistorial.style.display = 'block';
-                    btnHistorial.innerText = '▲ Ocultar Historial';
-                } else {
-                    divHistorial.style.display = 'none';
-                    btnHistorial.innerText = `📄 Ver Historial (${compras.length})`;
-                }
-            };
+            btnHistorial.onclick = () => toggleHistorial(c.id, btnHistorial);
 
+            const divHistorial = card.querySelector(`#historial-${c.id}`);
             compras.slice().reverse().forEach(v => {
                 const itemH = document.createElement('div');
                 itemH.className = 'historial-item';
