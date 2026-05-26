@@ -50,7 +50,7 @@
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
             <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙  Panel de Control</button>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙️ Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
@@ -140,7 +140,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=4').catch(() => console.log("Offline activo"));
+        navigator.serviceWorker.register('./sw.js?v=5').catch(() => console.log("Offline activo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
@@ -155,7 +155,7 @@
 
     let carrito = [];
     let clienteSeleccionado = null;
-    let bloqueadoPorVentaActiva = false; // Prevención de sobreescritura accidental
+    let bloqueadoPorVentaActiva = false; 
     const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
     window.onload = () => {
@@ -164,7 +164,7 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
-        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 12000);
+        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 10000);
     };
 
     function evaluarEstadoRed() {
@@ -241,7 +241,7 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // REMOCIÓN DE BUG FLOAT32ARRAY
+    // CORREGIDO: Limpieza total de carácteres corruptos
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -275,7 +275,6 @@
         }
     }
 
-    // REMOCIÓN DE BUG DE LA COMA DE SAFARI EN FECHAS
     function limpiarFechaUniversal(cadenaFecha) {
         if(!cadenaFecha) return "";
         let limpia = cadenaFecha.replace(/,/, ''); 
@@ -354,6 +353,7 @@
         });
     }
 
+    // CORREGIDO: Remoción total de carácteres tipográficos incorrectos
     function iniciarVenta(idCliente) {
         const cliente = db.clientes.find(c => c.id === idCliente);
         if(!cliente) return;
@@ -364,6 +364,7 @@
         actualizarTicketUI();
     }
 
+    // CORREGIDO: Remoción total de carácteres tipográficos incorrectos
     function agregarAlCarrito(idProd) {
         const prod = db.productos.find(p => p.id === idProd);
         const peso = parseFloat(document.getElementById('peso-input').value);
@@ -402,18 +403,15 @@
         guardarDB(); renderClientes();
     }
 
-    // ARREGLADO: Motor de Guardado Nativo e Integración con WhatsApp para iOS y Android
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
         
         const contenedor = document.getElementById('ticket-captura');
         const previewEstilo = document.getElementById('preview-container-style');
-        
-        // Desactivar temporalmente el sticky para evitar que WebKit corte la foto
         if(previewEstilo) previewEstilo.style.position = "static";
 
         html2canvas(contenedor, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(async canvas => {
-            if(previewEstilo) previewEstilo.style.position = "sticky"; // Re-activar
+            if(previewEstilo) previewEstilo.style.position = "sticky"; 
             
             const dataUrl = canvas.toDataURL("image/png");
             const tktId = document.getElementById('tkt-id').innerText;
@@ -422,7 +420,6 @@
                 const blob = await (await fetch(dataUrl)).blob();
                 const archivo = new File([blob], `Nota_${tktId}.png`, { type: "image/png" });
                 
-                // Si el dispositivo es iOS o Android con soporte para compartir archivos
                 if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
                     await navigator.share({
                         files: [archivo],
@@ -432,7 +429,6 @@
                     finalizarVenta();
                     irA('vista-inicio');
                 } else {
-                    // Fallback tradicional para navegadores de escritorio
                     const link = document.createElement('a');
                     link.download = `Ticket_${tktId}.png`;
                     link.href = dataUrl;
@@ -441,7 +437,6 @@
                     irA('vista-inicio');
                 }
             } catch (err) {
-                // Segunda alternativa si el sistema operativo bloquea la API Share de golpe
                 const ventanaImagen = window.open();
                 if(ventanaImagen) {
                     ventanaImagen.document.write(`<p style="font-family:sans-serif; text-align:center;">Mantén presionada la imagen para guardarla o enviarla por WhatsApp:</p><img src="${dataUrl}" style="border:1px solid #000; display:block; margin:0 auto; max-width:100%;">`);
