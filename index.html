@@ -50,13 +50,13 @@
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
             <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙️ Panel de Control</button>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙  Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
 
     <div id="vista-caja" class="view">
-        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')" style="margin-bottom:15px;">⬅️ Volver</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">⬅️ Volver</button>
         <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
             Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
         </div>
@@ -69,7 +69,7 @@
                 <div id="catalogo-btns" class="grid"></div>
             </div>
             
-            <div class="ticket-preview">
+            <div class="ticket-preview" id="preview-container-style">
                 <div id="ticket-captura" style="background: white; padding: 15px; border: 1px dashed #333; margin-bottom: 15px; color: #000;">
                     <div style="text-align: center;">
                         <img src="" class="logo id-ticket-logo" style="max-height: 50px; display: none;">
@@ -84,7 +84,7 @@
                     <table width="100%" style="font-size: 11px; border-top: 1px solid #000; padding-top: 5px;" id="tkt-tabla"></table>
                     <h3 align="right" style="margin: 10px 0 0 0; border-top: 1px dashed #000; padding-top: 5px;">TOTAL: <span id="tkt-total">$0.00</span></h3>
                 </div>
-                <button class="btn btn-primario" onclick="descargarTicketImagen()">💾 Guardar Ticket (Imagen)</button>
+                <button class="btn btn-primario" onclick="descargarTicketImagen()">💾 Guardar y Compartir Nota</button>
             </div>
         </div>
     </div>
@@ -93,9 +93,9 @@
         <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
         
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="cambiarTab('tab-negocio')">🏢 Negocio y Nube</button>
-            <button class="tab-btn" onclick="cambiarTab('tab-productos')">🥩 Cortes</button>
-            <button class="tab-btn" onclick="cambiarTab('tab-clientes')">👥 Clientes</button>
+            <button class="tab-btn active" onclick="cambiarTab('tab-negocio', this)">🏢 Negocio y Nube</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-productos', this)">🥩 Cortes</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-clientes', this)">👥 Clientes</button>
         </div>
 
         <div id="tab-negocio" class="tab-content active card">
@@ -139,9 +139,8 @@
 <div id="ticket-final" style="display: none;"></div>
 
 <script>
-    // Registro del Service Worker forzando actualización de versión (?v=2)
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=2').catch(err => console.log("Modo app listo"));
+        navigator.serviceWorker.register('./sw.js?v=4').catch(() => console.log("Offline activo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
@@ -156,6 +155,7 @@
 
     let carrito = [];
     let clienteSeleccionado = null;
+    let bloqueadoPorVentaActiva = false; // Prevención de sobreescritura accidental
     const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
     window.onload = () => {
@@ -164,7 +164,7 @@
         renderCatalogo();
         evaluarEstadoRed();
         if(db.negocio.syncKey) descargarDeLaNube();
-        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey) descargarDeLaNube(); }, 10000);
+        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 12000);
     };
 
     function evaluarEstadoRed() {
@@ -182,13 +182,15 @@
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         const target = document.getElementById(vistaId);
         if(target) target.classList.add('active');
+        if(vistaId === 'vista-inicio') bloqueadoPorVentaActiva = false;
     }
 
-    function cambiarTab(tabId) {
+    function cambiarTab(tabId, elemento) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
+        elemento.classList.add('active');
+        const target = document.getElementById(tabId);
+        if(target) target.classList.add('active');
         if(tabId === 'tab-productos' || tabId === 'tab-clientes') renderListasAdmin();
     }
 
@@ -206,7 +208,22 @@
     function procesarLogo(input) {
         if (input.files && input.files[0]) {
             const lector = new FileReader();
-            lector.onload = function(e) { db.negocio.logo = e.target.result; guardarDB(); aplicarConfigUI(); };
+            lector.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxAncho = 200; 
+                    const escala = maxAncho / img.width;
+                    canvas.width = maxAncho;
+                    canvas.height = img.height * escala;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    db.negocio.logo = canvas.toDataURL('image/jpeg', 0.7); 
+                    guardarDB();
+                    aplicarConfigUI();
+                };
+                img.src = e.target.result;
+            };
             lector.readAsDataURL(input.files[0]);
         }
     }
@@ -224,6 +241,7 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
+    // REMOCIÓN DE BUG FLOAT32ARRAY
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -257,6 +275,13 @@
         }
     }
 
+    // REMOCIÓN DE BUG DE LA COMA DE SAFARI EN FECHAS
+    function limpiarFechaUniversal(cadenaFecha) {
+        if(!cadenaFecha) return "";
+        let limpia = cadenaFecha.replace(/,/, ''); 
+        return limpia.split(' ')[0] || limpia;
+    }
+
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -271,7 +296,7 @@
                 <h3 style="margin:0; text-transform:uppercase;">${c.nombre}</h3>
                 <p style="font-size:0.85em; color:#555; margin-bottom:10px;">Historial: <strong>$${total.toFixed(2)}</strong></p>
                 <button class="btn btn-primario btn-abrir-cuenta" style="margin-bottom:6px;">Nueva Cuenta</button>
-                <button class="btn btn-gris btn-ver-historial">📄 Ver Historial Completo (${compras.length})</button>
+                <button class="btn btn-gris btn-ver-historial">📄 Ver Historial (${compras.length})</button>
                 <div id="historial-${c.id}" style="display: none; margin-top: 8px; max-height: 180px; overflow-y: auto; border-top: 1px dashed #ccc; padding-top: 4px;"></div>
             `;
             
@@ -283,13 +308,13 @@
             btnHistorial.onclick = () => {
                 const oculto = divHistorial.style.display === 'none';
                 divHistorial.style.display = oculto ? 'block' : 'none';
-                btnHistorial.innerText = oculto ? '▲ Ocultar Historial' : `📄 Ver Historial Completo (${compras.length})`;
+                btnHistorial.innerText = oculto ? '▲ Ocultar Historial' : `📄 Ver Historial (${compras.length})`;
             };
 
             compras.slice().reverse().forEach(v => {
                 const itemH = document.createElement('div');
                 itemH.className = 'historial-item';
-                itemH.innerHTML = `<span>${v.fecha.split(' ')[0]}</span><strong>$${v.total.toFixed(2)}</strong>`;
+                itemH.innerHTML = `<span>${limpiarFechaUniversal(v.fecha)}</span><strong>$${v.total.toFixed(2)}</strong>`;
                 itemH.onclick = () => verDetalleVenta(v.id);
                 divHistorial.appendChild(itemH);
             });
@@ -331,7 +356,9 @@
 
     function iniciarVenta(idCliente) {
         const cliente = db.clientes.find(c => c.id === idCliente);
+        if(!cliente) return;
         clienteSeleccionado = cliente;
+        bloqueadoPorVentaActiva = true; 
         document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
         carrito = [];
         actualizarTicketUI();
@@ -371,22 +398,57 @@
             id: Date.now(), clienteId: clienteSeleccionado.id, clienteNombre: clienteSeleccionado.nombre,
             fecha: document.getElementById('tkt-fecha').innerText, items: [...carrito], total: total
         });
+        bloqueadoPorVentaActiva = false;
         guardarDB(); renderClientes();
     }
 
+    // ARREGLADO: Motor de Guardado Nativo e Integración con WhatsApp para iOS y Android
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
-        if(typeof html2canvas === 'undefined') {
-            finalizarVenta(); irA('vista-inicio'); return;
-        }
+        
         const contenedor = document.getElementById('ticket-captura');
-        html2canvas(contenedor, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Ticket_${document.getElementById('tkt-id').innerText}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            finalizarVenta();
-            irA('vista-inicio');
+        const previewEstilo = document.getElementById('preview-container-style');
+        
+        // Desactivar temporalmente el sticky para evitar que WebKit corte la foto
+        if(previewEstilo) previewEstilo.style.position = "static";
+
+        html2canvas(contenedor, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(async canvas => {
+            if(previewEstilo) previewEstilo.style.position = "sticky"; // Re-activar
+            
+            const dataUrl = canvas.toDataURL("image/png");
+            const tktId = document.getElementById('tkt-id').innerText;
+
+            try {
+                const blob = await (await fetch(dataUrl)).blob();
+                const archivo = new File([blob], `Nota_${tktId}.png`, { type: "image/png" });
+                
+                // Si el dispositivo es iOS o Android con soporte para compartir archivos
+                if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+                    await navigator.share({
+                        files: [archivo],
+                        title: `Nota 7 Toros #${tktId}`,
+                        text: `Aquí tienes tu nota de compra.`
+                    });
+                    finalizarVenta();
+                    irA('vista-inicio');
+                } else {
+                    // Fallback tradicional para navegadores de escritorio
+                    const link = document.createElement('a');
+                    link.download = `Ticket_${tktId}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                    finalizarVenta();
+                    irA('vista-inicio');
+                }
+            } catch (err) {
+                // Segunda alternativa si el sistema operativo bloquea la API Share de golpe
+                const ventanaImagen = window.open();
+                if(ventanaImagen) {
+                    ventanaImagen.document.write(`<p style="font-family:sans-serif; text-align:center;">Mantén presionada la imagen para guardarla o enviarla por WhatsApp:</p><img src="${dataUrl}" style="border:1px solid #000; display:block; margin:0 auto; max-width:100%;">`);
+                }
+                finalizarVenta();
+                irA('vista-inicio');
+            }
         });
     }
 
@@ -408,11 +470,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(db)
             });
-        } catch(e) { console.log("Red en espera"); }
+        } catch(e) {}
     }
 
     async function descargarDeLaNube() {
-        if(!navigator.onLine || !db.negocio.syncKey) return;
+        if(!navigator.onLine || !db.negocio.syncKey || bloqueadoPorVentaActiva) return;
         try {
             const res = await fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`);
             if(!res.ok) return;
@@ -424,7 +486,7 @@
             } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
                 subirALaNube();
             }
-        } catch(e) { console.log("Descarga en espera"); }
+        } catch(e) {}
     }
 
     function forzarSincronizacionCloud() {
@@ -434,7 +496,9 @@
 
     function guardarDB() {
         db.updatedAt = Date.now();
-        localStorage.setItem('carniceria_db', JSON.stringify(db));
+        try {
+            localStorage.setItem('carniceria_db', JSON.stringify(db));
+        } catch(e) {}
         subirALaNube();
     }
 </script>
