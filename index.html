@@ -90,7 +90,7 @@
     </div>
 
     <div id="vista-config" class="view">
-        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')" style="margin-bottom:20px;">⬅️ Regresar al Inicio</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">⬅️ Regresar al Inicio</button>
         
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="cambiarTab('tab-negocio', this)">🏢 Negocio y Nube</button>
@@ -140,7 +140,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=6').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=12').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0 };
@@ -153,7 +153,6 @@
         }
     } catch(e) {}
 
-    // Inicialización precargada si la memoria del negocio está vacía por completo
     if(db.productos.length === 0) {
         db.productos = [
             { id: 1, nombre: 'Bistec de Res', precio: 160 },
@@ -252,7 +251,6 @@
         if(db.negocio.syncKey) descargarDeLaNube();
     }
 
-    // ARREGLADO DEFINITIVAMENTE: Objeto limpio libre de Float32Array corruptos
     function agregarCliente() {
         const nom = document.getElementById('c-nombre').value.trim();
         if(!nom) return;
@@ -317,8 +315,7 @@
             
             btnHistorial.onclick = () => {
                 const oculto = divHistorial.style.display === 'none';
-                divHistorial.style.display =しかった ? 'block' : 'none'; // Corrección interna de toggle
-                if(divHistorial.style.display === 'none') {
+                if(oculto) {
                     divHistorial.style.display = 'block';
                     btnHistorial.innerText = '▲ Ocultar Historial';
                 } else {
@@ -418,7 +415,6 @@
         guardarDB(); renderClientes();
     }
 
-    // ARREGLADO DEFINITIVAMENTE: Convertidor nativo binario ArrayBuffer para evadir restricciones de Safari Standalone
     function base64ToBlobManual(base64Data, contentType) {
         const trozos = base64Data.split(',');
         const bytesTexto = atob(trozos[1]);
@@ -443,7 +439,6 @@
             const tktId = document.getElementById('tkt-id').innerText;
 
             try {
-                // Inyección del procesador de memoria RAM nativa binaria para iOS
                 const blobTicket = base64ToBlobManual(dataUrl, "image/png");
                 const archivo = new File([blobTicket], `Nota_${tktId}.png`, { type: "image/png" });
                 
