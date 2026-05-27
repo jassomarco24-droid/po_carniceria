@@ -156,7 +156,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=45').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=50').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -182,6 +182,9 @@
     if(db.clientes.length === 0) {
         db.clientes = [{ id: 101, nombre: "Cliente General" }];
     }
+
+    // MEJORA: Asegurar orden alfabético inicial con soporte para acentos y eñes en español
+    db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
     let carrito = [];
     let clienteSeleccionado = null;
@@ -287,11 +290,17 @@
         }
     }
 
+    // MEJORA: Añadir y ordenar automáticamente de manera alfabética
     function agregarProducto() {
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
         if(!nom || isNaN(pre) || pre <= 0) return;
+        
         db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
+        
+        // Inyección del ordenamiento alfabético en tiempo de guardado
+        db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        
         document.getElementById('p-nombre').value = '';
         document.getElementById('p-precio').value = '';
         guardarDB(); renderCatalogo(); renderListasAdmin();
@@ -410,7 +419,6 @@
         actualizarTicketUI();
     }
 
-    // ARREGLADO: Desglose dinámico de IVA (Inverso) y visualización del precio unitario por renglón
     function actualizarTicketUI() {
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
@@ -427,7 +435,6 @@
         let total = 0;
         carrito.forEach(i => {
             total += i.subtotal;
-            // MEJORA 1: Inyección del precio por kilo debajo del nombre del corte
             tabla.innerHTML += `<tr>
                 <td>${i.nombre}<br><small style="color:#555; font-size:9px;">$${i.precio.toFixed(2)} / Kg</small></td>
                 <td align="center" style="vertical-align:middle;">${i.peso.toFixed(3)}</td>
@@ -435,7 +442,6 @@
             </tr>`;
         });
 
-        // MEJORA 2: Operación del IVA del 16% inverso
         let subtotalSinIva = total / 1.16;
         let ivaCalculado = total - subtotalSinIva;
 
@@ -465,12 +471,13 @@
         guardarDB(); renderClientes();
     }
 
+    // ARREGLADO: Ajustada variable para evitar excepciones de red al procesar el stream Base64
     function base64ToBlobManual(base64Data, contentType) {
         const trozos = base64Data.split(',');
         const bytesTexto = atob(trozos[1]);
         const arregloBytes = new Uint8Array(bytesTexto.length);
         for (let i = 0; i < bytesTexto.length; i++) {
-            arregloBytes[i] = bytesBytes.charCodeAt(i);
+            arregloBytes[i] = bytesTexto.charCodeAt(i);
         }
         return new Blob([arregloBytes], { type: contentType });
     }
@@ -562,6 +569,10 @@
             const cloudData = await res.json();
             if(cloudData && cloudData.updatedAt && cloudData.updatedAt > db.updatedAt) {
                 db = cloudData;
+                
+                // MEJORA: Re-ordenar alfabéticamente al descargar cambios de la nube desde otro dispositivo
+                db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+                
                 localStorage.setItem('carniceria_db', JSON.stringify(db));
                 aplicarConfigUI(); renderClientes(); renderCatalogo();
             } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
