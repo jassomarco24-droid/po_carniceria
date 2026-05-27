@@ -146,6 +146,15 @@
                 
                 <button class="btn btn-primario" onclick="agregarProducto()">＋ Guardar Corte</button>
             </div>
+
+            <label style="font-weight: bold; font-size: 0.8em; display: block; margin-bottom: 6px;">FILTRAR VISTA DE CORTES:</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px;">
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: var(--oscuro); color: white;" onclick="filtrarAdminCat(null)">TODOS</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Res')">RES</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Cerdo')">CERDO</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Pollo')">POLLO</button>
+            </div>
+
             <div id="lista-config-productos"></div>
         </div>
 
@@ -164,7 +173,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=55').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=60').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -181,7 +190,6 @@
 
     db.ultimoFolio = db.ultimoFolio || 0;
 
-    // Inicialización con soporte de categorías nativo
     if(db.productos.length === 0) {
         db.productos = [
             { id: 1, nombre: 'Bistec de Res', precio: 160, categoria: 'Res' },
@@ -197,7 +205,8 @@
     let carrito = [];
     let clienteSeleccionado = null;
     let bloqueadoPorVentaActiva = false; 
-    let categoriaFiltroCaja = null; // MEJORA 2: Variable de control de filtrado dinámico para la caja
+    let categoriaFiltroCaja = null; 
+    let categoriaFiltroAdmin = null; // MEJORA 1: Variable de control de filtrado administrativo
     const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
     window.onload = () => {
@@ -299,7 +308,6 @@
         }
     }
 
-    // MEJORA 1: Recolección e inyección de categorías en administración
     function agregarProducto() {
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
@@ -319,6 +327,32 @@
             db.productos = db.productos.filter(p => p.id !== id);
             guardarDB(); renderCatalogo(); renderListasAdmin();
         }
+    }
+
+    // MEJORA 2: Función de cambio dinámico e in-situ del precio de un producto
+    function editarPrecioProducto(id) {
+        const prod = db.productos.find(p => p.id === id);
+        if(!prod) return;
+        
+        const nuevoPrecio = prompt(`Modificar precio de: ${prod.nombre.toUpperCase()}\nPrecio actual por Kg: $${prod.precio.toFixed(2)}\n\nIngresa el nuevo precio:`, prod.precio);
+        if(nuevoPrecio === null) return; 
+        
+        const precioFloat = parseFloat(nuevoPrecio);
+        if(isNaN(precioFloat) || precioFloat <= 0) {
+            alert("Operación cancelada. El precio debe ser un número válido mayor a 0.");
+            return;
+        }
+        
+        prod.precio = precioFloat;
+        guardarDB();
+        renderCatalogo();
+        renderListasAdmin();
+    }
+
+    // MEJORA 1: Manejador de evento del switch de botones administrativos
+    function filtrarAdminCat(cat) {
+        categoriaFiltroAdmin = cat;
+        renderListasAdmin();
     }
 
     function limpiarFechaUniversal(cadenaFecha) {
@@ -377,13 +411,11 @@
         });
     }
 
-    // MEJORA 2: Renderizador inteligente por categorías para la caja registradora
     function renderCatalogo() {
         const catDiv = document.getElementById('catalogo-btns');
         if(!catDiv) return; catDiv.innerHTML = '';
         
         if (!categoriaFiltroCaja) {
-            // Fase A: Si no hay categoría elegida, despliega los 3 botones principales requeridos
             const categoriasValidas = ['Res', 'Cerdo', 'Pollo'];
             categoriasValidas.forEach(cat => {
                 const btn = document.createElement('button');
@@ -397,7 +429,6 @@
                 catDiv.appendChild(btn);
             });
         } else {
-            // Fase B: Muestra el botón de regreso junto con los cortes que corresponden a la selección
             const btnVolver = document.createElement('button');
             btnVolver.className = 'btn btn-gris';
             btnVolver.style.gridColumn = '1 / -1';
@@ -421,14 +452,28 @@
         }
     }
 
+    // MEJORA 1 Y 2: Modificado el renderizado administrativo para soportar el split de botones y edición in-situ
     function renderListasAdmin() {
         const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
-        db.productos.forEach(p => {
+        
+        // Ejecución del filtro de categorías administrativo
+        const productosVisualizados = categoriaFiltroAdmin 
+            ? db.productos.filter(p => (p.categoria || 'Res') === categoriaFiltroAdmin)
+            : db.productos;
+
+        productosVisualizados.forEach(p => {
             const div = document.createElement('div'); div.className = 'item-admin';
-            div.innerHTML = `<span>${p.nombre} ($${p.precio}/kg) [${p.categoria || 'Res'}]</span><button class="btn btn-danger">✕</button>`;
+            div.innerHTML = `
+                <span><strong>${p.nombre}</strong> ($${p.precio.toFixed(2)}/kg) <small style="color:#666;">[${p.categoria || 'Res'}]</small></span>
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; background: #fff;" onclick="editarPrecioProducto(${p.id})">✏️ Editar</button>
+                    <button class="btn btn-danger">✕</button>
+                </div>
+            `;
             div.querySelector('.btn-danger').onclick = () => eliminarProducto(p.id);
             if(lp) lp.appendChild(div);
         });
+
         const lc = document.getElementById('lista-config-clientes'); if(lc) lc.innerHTML = '';
         db.clientes.forEach(c => {
             const div = document.createElement('div'); div.className = 'item-admin';
@@ -443,7 +488,7 @@
         if(!cliente) return;
         clienteSeleccionado = cliente;
         bloqueadoPorVentaActiva = true; 
-        categoriaFiltroCaja = null; // Reiniciar filtro al abrir cuenta nueva
+        categoriaFiltroCaja = null; 
         document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
         carrito = [];
         actualizarTicketUI();
@@ -511,6 +556,7 @@
         guardarDB(); renderClientes();
     }
 
+    // ARREGLADO: Procesador de stream Base64 con mapeo binario de variables nativas limpio
     function base64ToBlobManual(base64Data, contentType) {
         const trozos = base64Data.split(',');
         const bytesTexto = atob(trozos[1]);
