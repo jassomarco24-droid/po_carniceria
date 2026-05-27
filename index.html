@@ -21,7 +21,7 @@
         .view.active { display: block; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
         .card { background: var(--blanco); padding: 15px; border: 1px solid var(--borde); margin-bottom: 15px; }
-        .historial-item { background: var(--gris); padding: 8px; font-size: 0.8em; border: 1px solid var(--borde); margin-top: 5px; cursor: pointer; display: flex; justify-content: space-between; }
+        .historial-item { background: var(--gris); padding: 6px 8px; font-size: 0.8em; border: 1px solid var(--borde); margin-top: 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .flex-pos { display: flex; flex-wrap: wrap; gap: 20px; }
         .catalogo { flex: 2; min-width: 300px; }
         .ticket-preview { flex: 1; background: var(--blanco); min-width: 300px; padding: 20px; border: 1px solid var(--oscuro); position: sticky; top: 10px; }
@@ -178,7 +178,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=70').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=75').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -358,6 +358,7 @@
         renderListasAdmin();
     }
 
+    fn = limpiarFechaUniversal;
     function limpiarFechaUniversal(cadenaFecha) {
         if(!cadenaFecha) return "";
         let limpia = cadenaFecha.replace(/,/, ''); 
@@ -377,6 +378,7 @@
         }
     }
 
+    // MEJORA: Modificado el inyector HTML del historial para incrustar la X lateral independiente
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -405,8 +407,23 @@
                 const itemH = document.createElement('div');
                 itemH.className = 'historial-item';
                 const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
-                itemH.innerHTML = `<span>${limpiarFechaUniversal(v.fecha)} (Folio: ${numNota})</span><strong>$${v.total.toFixed(2)}</strong>`;
-                itemH.onclick = () => verDetalleVenta(v.id);
+                
+                // Distribución modular: Renglón izquierdo de datos y botón de cancelación limpio a la derecha
+                itemH.innerHTML = `
+                    <div class="info-click-area" style="display: flex; justify-content: space-between; flex: 1; align-items: center; padding-right: 12px; height: 100%;">
+                        <span>${limpiarFechaUniversal(v.fecha)} (Folio: ${numNota})</span>
+                        <strong>$${v.total.toFixed(2)}</strong>
+                    </div>
+                    <button class="btn btn-danger btn-eliminar-nota" style="padding: 2px 6px; font-size: 0.75em; border-color: #cc0000;">✕</button>
+                `;
+                
+                // Separación absoluta de eventos en producción
+                itemH.querySelector('.info-click-area').onclick = () => verDetalleVenta(v.id);
+                itemH.querySelector('.btn-eliminar-nota').onclick = (e) => {
+                    e.stopPropagation(); // Previene que se dispare la alerta de desglose al dar clic a la X
+                    eliminarVentaHistorico(v.id);
+                };
+                
                 divHistorial.appendChild(itemH);
             });
             
@@ -414,7 +431,6 @@
         });
     }
 
-    // MEJORA 2: Adaptador dinámico de búsqueda cruzada para la interfaz de caja
     function renderCatalogo() {
         const catDiv = document.getElementById('catalogo-btns');
         if(!catDiv) return; catDiv.innerHTML = '';
@@ -422,7 +438,6 @@
         const buscarText = document.getElementById('buscar-caja-input') ? document.getElementById('buscar-caja-input').value.trim().toLowerCase() : '';
         
         if (buscarText !== '') {
-            // Fase A: Si el usuario escribe algo, se despliega el listado unificado ignorando la división por módulos
             const productosFiltrados = db.productos.filter(p => p.nombre.toLowerCase().includes(buscarText));
             if (productosFiltrados.length === 0) {
                 catDiv.innerHTML = '<p style="grid-column: 1/-1; text-align:center; font-size:0.9em; color:#777; padding:15px;">No se encontraron cortes que coincidan.</p>';
@@ -438,7 +453,6 @@
                 catDiv.appendChild(btn);
             });
         } else if (!categoriaFiltroCaja) {
-            // Fase B: Menú por defecto con los 3 botones limpios de categoría
             const categoriasValidas = ['Res', 'Cerdo', 'Pollo'];
             categoriasValidas.forEach(cat => {
                 const btn = document.createElement('button');
@@ -452,7 +466,6 @@
                 catDiv.appendChild(btn);
             });
         } else {
-            // Fase C: Desglose interno de cortes de una categoría específica
             const btnVolver = document.createElement('button');
             btnVolver.className = 'btn btn-gris';
             btnVolver.style.gridColumn = '1 / -1';
@@ -475,7 +488,6 @@
         }
     }
 
-    // MEJORA 2: Adaptador dinámico de búsqueda cruzada para la interfaz de administración
     function renderListasAdmin() {
         const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
         
@@ -518,7 +530,6 @@
         bloqueadoPorVentaActiva = true; 
         categoriaFiltroCaja = null; 
         
-        // Limpiar la barra de búsqueda al abrir una nueva cuenta para reiniciar la UI limpia
         if(document.getElementById('buscar-caja-input')) {
             document.getElementById('buscar-caja-input').value = '';
         }
@@ -590,7 +601,6 @@
         guardarDB(); renderClientes();
     }
 
-    // ARREGLADO DEFINITIVAMENTE: Corrección a variable global de puntero base64 para evitar fugas de memoria en WebKit
     function base64ToBlobManual(base64Data, contentType) {
         const trozos = base64Data.split(',');
         const bytesTexto = atob(trozos[1]);
@@ -656,7 +666,7 @@
         });
     }
 
-    // MEJORA 1: Motor integrado de consulta de detalles y remoción de notas erróneas con descuento automático
+    // MEJORA: Modificada a solo lectura para ver detalles limpiamente
     function verDetalleVenta(idVenta) {
         const v = db.ventas.find(venta => venta.id === idVenta);
         if(!v) return;
@@ -664,14 +674,22 @@
         const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
         let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) -> $${i.subtotal.toFixed(2)}`).join('\n');
         
-        const mensajeDeAlerta = `Folio Nota: #${numNota}\nCliente: ${v.clienteNombre}\nFecha: ${v.fecha}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}\n\n¿Deseas ELIMINAR esta nota permanentemente por error?\n(Se descontará del saldo total histórico del cliente automáticamente)`;
+        alert(`Folio Nota: #${numNota}\nCliente: ${v.clienteNombre}\nFecha: ${v.fecha}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
+    }
+
+    // MEJORA: Nueva función atómica dedicada a la remoción independiente por clic en la X
+    function eliminarVentaHistorico(idVenta) {
+        const v = db.ventas.find(venta => venta.id === idVenta);
+        if(!v) return;
         
-        if (confirm(mensajeDeAlerta)) {
-            // Filtrado atómico del arreglo de notas
+        const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
+        const confirmacion = confirm(`¿Deseas ELIMINAR permanentemente la Nota Folio #${numNota}?\nSe descontará de los saldos acumulados de inmediato.`);
+        
+        if (confirmacion) {
             db.ventas = db.ventas.filter(venta => venta.id !== idVenta);
             guardarDB();
             renderClientes();
-            alert("Nota eliminada del historial con éxito.");
+            alert("Nota eliminada correctamente.");
         }
     }
 
