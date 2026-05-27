@@ -82,7 +82,22 @@
                         <strong>FECHA:</strong> <span id="tkt-fecha"></span>
                     </p>
                     <table width="100%" style="font-size: 11px; border-top: 1px solid #000; padding-top: 5px;" id="tkt-tabla"></table>
-                    <h3 align="right" style="margin: 10px 0 0 0; border-top: 1px dashed #000; padding-top: 5px;">TOTAL: <span id="tkt-total">$0.00</span></h3>
+                    
+                    <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 10px; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                            <span>SUBTOTAL:</span>
+                            <span id="tkt-subtotal">$0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                            <span>IVA (16%):</span>
+                            <span id="tkt-iva">$0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; border-top: 1px solid #000; padding-top: 4px;">
+                            <span>TOTAL:</span>
+                            <span id="tkt-total">$0.00</span>
+                        </div>
+                    </div>
+
                     <p style="text-align: center; font-size: 11px; font-weight: bold; margin: 15px 0 0 0; border-top: 1px dashed #000; padding-top: 8px; text-transform: uppercase;">¡Gracias por su compra!</p>
                 </div>
                 <button class="btn btn-primario" onclick="descargarTicketImagen()">💾 Guardar y Compartir Nota</button>
@@ -141,7 +156,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=40').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=45').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -395,6 +410,7 @@
         actualizarTicketUI();
     }
 
+    // ARREGLADO: Desglose dinámico de IVA (Inverso) y visualización del precio unitario por renglón
     function actualizarTicketUI() {
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
@@ -406,13 +422,27 @@
         document.getElementById('tkt-fecha').innerText = new Date().toLocaleString('es-MX');
 
         const tabla = document.getElementById('tkt-tabla');
-        tabla.innerHTML = '<tr><th align="left">Corte</th><th align="center">Kg</th><th align="right">Importe</th></tr>';
+        tabla.innerHTML = '<tr><th align="left">Corte / Precio</th><th align="center">Kg</th><th align="right">Importe</th></tr>';
+        
         let total = 0;
         carrito.forEach(i => {
             total += i.subtotal;
-            tabla.innerHTML += `<tr><td>${i.nombre}</td><td align="center">${i.peso.toFixed(3)}</td><td align="right">$${i.subtotal.toFixed(2)}</td></tr>`;
+            // MEJORA 1: Inyección del precio por kilo debajo del nombre del corte
+            tabla.innerHTML += `<tr>
+                <td>${i.nombre}<br><small style="color:#555; font-size:9px;">$${i.precio.toFixed(2)} / Kg</small></td>
+                <td align="center" style="vertical-align:middle;">${i.peso.toFixed(3)}</td>
+                <td align="right" style="vertical-align:middle;">$${i.subtotal.toFixed(2)}</td>
+            </tr>`;
         });
+
+        // MEJORA 2: Operación del IVA del 16% inverso
+        let subtotalSinIva = total / 1.16;
+        let ivaCalculado = total - subtotalSinIva;
+
+        document.getElementById('tkt-subtotal').innerText = `$${subtotalSinIva.toFixed(2)}`;
+        document.getElementById('tkt-iva').innerText = `$${ivaCalculado.toFixed(2)}`;
         document.getElementById('tkt-total').innerText = `$${total.toFixed(2)}`;
+        
         irA('vista-caja');
     }
 
@@ -440,24 +470,18 @@
         const bytesTexto = atob(trozos[1]);
         const arregloBytes = new Uint8Array(bytesTexto.length);
         for (let i = 0; i < bytesTexto.length; i++) {
-            arregloBytes[i] = bytesTexto.charCodeAt(i);
+            arregloBytes[i] = bytesBytes.charCodeAt(i);
         }
         return new Blob([arregloBytes], { type: contentType });
     }
 
-    // ARREGLADO: Inyección de dimensiones fijas y limpieza de scroll para html2canvas móvil
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
         
         const contenedor = document.getElementById('ticket-captura');
         const previewEstilo = document.getElementById('preview-container-style');
-        
-        // Desactivar temporalmente el sticky para que no desfase la altura en celulares
-        if(previewEstilo) {
-            previewEstilo.style.position = "static";
-        }
+        if(previewEstilo) previewEstilo.style.position = "static";
 
-        // Forzar al navegador a leer el tamaño exacto del ticket antes del render
         const anchoTicket = contenedor.offsetWidth;
         const altoTicket = contenedor.offsetHeight;
 
@@ -465,14 +489,12 @@
             scale: 2, 
             backgroundColor: "#ffffff", 
             useCORS: true,
-            scrollX: 0, // Evita desfase por scroll horizontal
-            scrollY: 0, // Evita que la imagen salga mocha por scroll vertical
-            width: anchoTicket, // Fuerza el ancho exacto del bloque
-            height: altoTicket // Fuerza el alto exacto del bloque con las leyendas
+            scrollX: 0, 
+            scrollY: 0, 
+            width: anchoTicket, 
+            height: altoTicket 
         }).then(async canvas => {
-            if(previewEstilo) {
-                previewEstilo.style.position = "sticky"; 
-            }
+            if(previewEstilo) previewEstilo.style.position = "sticky"; 
             
             const dataUrl = canvas.toDataURL("image/png");
             const tktId = document.getElementById('tkt-id').innerText;
