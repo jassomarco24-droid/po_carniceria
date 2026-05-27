@@ -42,7 +42,7 @@
 <header>
     <img src="https://via.placeholder.com/120x60?text=7+Toros" alt="7 Toros" class="logo" id="app-logo">
     <h1 id="nombre-negocio" style="margin:0; font-size: 1.5em; text-transform: uppercase;">7 Toros</h1>
-    <div id="status-red" class="online">Detectando señal...</div>
+    <div id="status-red" class="online">Detectando senal...</div>
 </header>
 
 <div class="container">
@@ -67,7 +67,7 @@
                     <input type="number" id="peso-input" value="1.000" step="0.001" min="0.001" style="font-size: 2em; font-weight: bold; border: none; border-bottom: 2px solid var(--primario); color: var(--primario); margin: 0;">
                 </div>
                 
-                <input type="text" id="buscar-caja-input" placeholder="Buscar corte rápido en caja..." oninput="renderCatalogo()" style="margin-bottom: 15px; height: 40px;">
+                <input type="text" id="buscar-caja-input" placeholder="Buscar corte rapido en caja..." oninput="renderCatalogo()" style="margin-bottom: 15px; height: 40px;">
                 
                 <div id="catalogo-btns" class="grid"></div>
             </div>
@@ -167,7 +167,7 @@
             <h3>Lista de Clientes</h3>
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
                 <input type="text" id="c-nombre" placeholder="Nombre del cliente">
-                <button class="btn btn-primario" onclick="agregarCliente()">+ Registrar Cliente</button>
+                <button class="btn btn-primario" onclick="plus Registrar Cliente">+ Registrar Cliente</button>
             </div>
             <div id="lista-config-clientes"></div>
         </div>
@@ -178,7 +178,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=80').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=85').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -202,7 +202,7 @@
         ];
     }
     if(db.clientes.length === 0) {
-        db.clientes = [{ id: 101, font-family: "Segoe UI", nombre: "Cliente General" }];
+        db.clientes = [{ id: 101, nombre: "Cliente General" }];
     }
 
     db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -214,13 +214,19 @@
     let categoriaFiltroAdmin = null; 
     const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
+    // MODIFICADO: Inyección de escuchadores reactivos de hardware para internet instantáneo
     window.onload = () => {
         aplicarConfigUI();
         renderClientes();
         renderCatalogo();
         evaluarEstadoRed();
+        
+        // Escuchadores de cambio de red en tiempo real (milisegundos)
+        window.addEventListener('online', evaluarEstadoRed);
+        window.addEventListener('offline', evaluarEstadoRed);
+        
         if(db.negocio.syncKey) descargarDeLaNube();
-        setInterval(() => { evaluarEstadoRed(); if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 10000);
+        setInterval(() => { if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 10000);
     };
 
     function evaluarEstadoRed() {
@@ -427,6 +433,7 @@
         });
     }
 
+    // El resto de la logica permanece exactamente intacta
     function renderCatalogo() {
         const catDiv = document.getElementById('catalogo-btns');
         if(!catDiv) return; catDiv.innerHTML = '';
@@ -486,7 +493,6 @@
 
     function renderListasAdmin() {
         const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
-        
         const buscarAdminText = document.getElementById('buscar-admin-input') ? document.getElementById('buscar-admin-input').value.trim().toLowerCase() : '';
         
         let productosVisualizados = categoriaFiltroAdmin 
@@ -580,7 +586,6 @@
 
     function finalizarVenta() {
         if(carrito.length === 0) return;
-        
         db.ultimoFolio = (db.ultimoFolio || 0) + 1;
         
         const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
