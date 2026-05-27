@@ -50,7 +50,7 @@
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
             <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙️ Panel de Control</button>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙ Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
@@ -141,7 +141,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=35').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=40').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -156,7 +156,6 @@
         }
     } catch(e) {}
 
-    // Garantizar inicialización del secuenciador
     db.ultimoFolio = db.ultimoFolio || 0;
 
     if(db.productos.length === 0) {
@@ -336,7 +335,6 @@
             compras.slice().reverse().forEach(v => {
                 const itemH = document.createElement('div');
                 itemH.className = 'historial-item';
-                // MEJORA 1: Muestra el folio secuencial en el desglose del historial
                 const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
                 itemH.innerHTML = `<span>${limpiarFechaUniversal(v.fecha)} (Folio: ${numNota})</span><strong>$${v.total.toFixed(2)}</strong>`;
                 itemH.onclick = () => verDetalleVenta(v.id);
@@ -401,7 +399,6 @@
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
         
-        // MEJORA 1: Previsualiza el folio secuencial calculado que tendrá la nota
         const siguienteFolio = (db.ultimoFolio || 0) + 1;
         document.getElementById('tkt-id').innerText = siguienteFolio;
         
@@ -422,13 +419,12 @@
     function finalizarVenta() {
         if(carrito.length === 0) return;
         
-        // MEJORA 1: Incrementa el contador global de folios secuenciales antes de empaquetar
         db.ultimoFolio = (db.ultimoFolio || 0) + 1;
         
         const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
         db.ventas.push({
             id: Date.now(), 
-            folio: db.ultimoFolio, // Guardado rígido en JSON
+            folio: db.ultimoFolio, 
             clienteId: clienteSeleccionado.id, 
             clienteNombre: clienteSeleccionado.nombre,
             fecha: document.getElementById('tkt-fecha').innerText, 
@@ -449,15 +445,34 @@
         return new Blob([arregloBytes], { type: contentType });
     }
 
+    // ARREGLADO: Inyección de dimensiones fijas y limpieza de scroll para html2canvas móvil
     function descargarTicketImagen() {
         if(carrito.length === 0) return;
         
         const contenedor = document.getElementById('ticket-captura');
         const previewEstilo = document.getElementById('preview-container-style');
-        if(previewEstilo) previewEstilo.style.position = "static";
+        
+        // Desactivar temporalmente el sticky para que no desfase la altura en celulares
+        if(previewEstilo) {
+            previewEstilo.style.position = "static";
+        }
 
-        html2canvas(contenedor, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(async canvas => {
-            if(previewEstilo) previewEstilo.style.position = "sticky"; 
+        // Forzar al navegador a leer el tamaño exacto del ticket antes del render
+        const anchoTicket = contenedor.offsetWidth;
+        const altoTicket = contenedor.offsetHeight;
+
+        html2canvas(contenedor, { 
+            scale: 2, 
+            backgroundColor: "#ffffff", 
+            useCORS: true,
+            scrollX: 0, // Evita desfase por scroll horizontal
+            scrollY: 0, // Evita que la imagen salga mocha por scroll vertical
+            width: anchoTicket, // Fuerza el ancho exacto del bloque
+            height: altoTicket // Fuerza el alto exacto del bloque con las leyendas
+        }).then(async canvas => {
+            if(previewEstilo) {
+                previewEstilo.style.position = "sticky"; 
+            }
             
             const dataUrl = canvas.toDataURL("image/png");
             const tktId = document.getElementById('tkt-id').innerText;
@@ -497,7 +512,6 @@
         const v = db.ventas.find(venta => venta.id === idVenta);
         if(!v) return;
         
-        // MEJORA 1: Usa el folio en las alertas de despliegue histórico
         const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
         
         if(!v.items || v.items.length === 0) {
