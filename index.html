@@ -49,14 +49,14 @@
 
     <div id="vista-inicio" class="view active">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
-            <h2 style="margin:0; font-weight: 400;">👥 CLIENTES</h2>
-            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">⚙ Panel de Control</button>
+            <h2 style="margin:0; font-weight: 400;">CLIENTES</h2>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">Panel de Control</button>
         </div>
         <div id="lista-clientes" class="grid"></div>
     </div>
 
     <div id="vista-caja" class="view">
-        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">⬅️ Volver</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">Volver</button>
         <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
             Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
         </div>
@@ -67,7 +67,7 @@
                     <input type="number" id="peso-input" value="1.000" step="0.001" min="0.001" style="font-size: 2em; font-weight: bold; border: none; border-bottom: 2px solid var(--primario); color: var(--primario); margin: 0;">
                 </div>
                 
-                <input type="text" id="buscar-caja-input" placeholder="🔍 Buscar corte rápido en caja..." oninput="renderCatalogo()" style="margin-bottom: 15px; height: 40px;">
+                <input type="text" id="buscar-caja-input" placeholder="Buscar corte rápido en caja..." oninput="renderCatalogo()" style="margin-bottom: 15px; height: 40px;">
                 
                 <div id="catalogo-btns" class="grid"></div>
             </div>
@@ -103,39 +103,39 @@
 
                     <p style="text-align: center; font-size: 11px; font-weight: bold; margin: 15px 0 0 0; border-top: 1px dashed #000; padding-top: 8px; text-transform: uppercase;">¡Gracias por su compra!</p>
                 </div>
-                <button class="btn btn-primario" onclick="descargarTicketImagen()">💾 Guardar y Compartir Nota</button>
+                <button class="btn btn-primario" onclick="descargarTicketImagen()">Guardar y Compartir Nota</button>
             </div>
         </div>
     </div>
 
     <div id="vista-config" class="view">
-        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">⬅️ Regresar al Inicio</button>
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">Regresar al Inicio</button>
         
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="cambiarTab('tab-negocio', this)">🏢 Negocio y Nube</button>
-            <button class="tab-btn" onclick="cambiarTab('tab-productos', this)">🥩 Cortes</button>
-            <button class="tab-btn" onclick="cambiarTab('tab-clientes', this)">👥 Clientes</button>
+            <button class="tab-btn active" onclick="cambiarTab('tab-negocio', this)">Negocio y Nube</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-productos', this)">Cortes</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-clientes', this)">Clientes</button>
         </div>
 
         <div id="tab-negocio" class="tab-content active card">
-            <h3>🏢 Configuración de Cabecera</h3>
+            <h3>Configuración de Cabecera</h3>
             <input type="text" id="cfg-nombre" placeholder="Nombre Comercial">
             <input type="text" id="cfg-contacto" placeholder="Teléfono / Dirección">
             
-            <label style="font-weight: bold; font-size: 0.85em; display:block; margin-bottom: 5px;">🖼️ CAMBIAR LOGO:</label>
+            <label style="font-weight: bold; font-size: 0.85em; display:block; margin-bottom: 5px;">CAMBIAR LOGO:</label>
             <input type="file" id="cfg-logo-input" accept="image/*" onchange="procesarLogo(this)">
             
             <div style="background: #eef; padding: 15px; margin-top: 15px; border: 1px solid #ccd;">
-                <h4>🔄 Sincronización Multidispositivo</h4>
+                <h4>Sincronización Multidispositivo</h4>
                 <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Crea una palabra secreta única sin espacios para enlazar tus celulares.</p>
                 <input type="text" id="cfg-sync-code" placeholder="Ej. toros7sincro" onchange="configurarSyncKey()">
-                <button class="btn btn-gris" style="background: white;" onclick="forzarSincronizacionCloud()">☁️ Forzar Sincronización Manual</button>
+                <button class="btn btn-gris" style="background: white;" onclick="forzarSincronizacionCloud()">Forzar Sincronización Manual</button>
             </div>
             <button class="btn btn-primario" style="margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
         </div>
 
         <div id="tab-productos" class="tab-content card">
-            <h3>🥩 Catálogo de Cortes</h3>
+            <h3>Catálogo de Cortes</h3>
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
                 <input type="text" id="p-nombre" placeholder="Nombre del corte">
                 <input type="number" id="p-precio" placeholder="Precio por Kg">
@@ -147,7 +147,7 @@
                     <option value="Pollo">Pollo</option>
                 </select>
                 
-                <button class="btn btn-primario" onclick="agregarProducto()">＋ Guardar Corte</button>
+                <button class="btn btn-primario" onclick="agregarProducto()">+ Guardar Corte</button>
             </div>
 
             <label style="font-weight: bold; font-size: 0.8em; display: block; margin-bottom: 6px;">FILTRAR VISTA DE CORTES:</label>
@@ -158,16 +158,16 @@
                 <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Pollo')">POLLO</button>
             </div>
 
-            <input type="text" id="buscar-admin-input" placeholder="🔍 Buscar corte en catálogo administrativo..." oninput="renderListasAdmin()" style="margin-bottom: 15px; height: 40px;">
+            <input type="text" id="buscar-admin-input" placeholder="Buscar corte en catálogo administrativo..." oninput="renderListasAdmin()" style="margin-bottom: 15px; height: 40px;">
 
             <div id="lista-config-productos"></div>
         </div>
 
         <div id="tab-clientes" class="tab-content card">
-            <h3>👥 Lista de Clientes</h3>
+            <h3>Lista de Clientes</h3>
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
                 <input type="text" id="c-nombre" placeholder="Nombre del cliente">
-                <button class="btn btn-primario" onclick="agregarCliente()">＋ Registrar Cliente</button>
+                <button class="btn btn-primario" onclick="agregarCliente()">+ Registrar Cliente</button>
             </div>
             <div id="lista-config-clientes"></div>
         </div>
@@ -178,7 +178,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=75').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=80').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -202,7 +202,7 @@
         ];
     }
     if(db.clientes.length === 0) {
-        db.clientes = [{ id: 101, nombre: "Cliente General" }];
+        db.clientes = [{ id: 101, font-family: "Segoe UI", nombre: "Cliente General" }];
     }
 
     db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -358,7 +358,6 @@
         renderListasAdmin();
     }
 
-    fn = limpiarFechaUniversal;
     function limpiarFechaUniversal(cadenaFecha) {
         if(!cadenaFecha) return "";
         let limpia = cadenaFecha.replace(/,/, ''); 
@@ -371,14 +370,13 @@
         
         if(divHistorial.style.display === 'none' || divHistorial.style.display === '') {
             divHistorial.style.display = 'block';
-            btn.innerText = '▲ Ocultar Historial';
+            btn.innerText = 'Ocultar Historial';
         } else {
             divHistorial.style.display = 'none';
-            btn.innerText = `📄 Ver Historial (${totalVentas})`;
+            btn.innerText = `Ver Historial (${totalVentas})`;
         }
     }
 
-    // MEJORA: Modificado el inyector HTML del historial para incrustar la X lateral independiente
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -393,7 +391,7 @@
                 <h3 style="margin:0; text-transform:uppercase;">${c.nombre}</h3>
                 <p style="font-size:0.85em; color:#555; margin-bottom:10px;">Historial: <strong>$${total.toFixed(2)}</strong></p>
                 <button class="btn btn-primario btn-abrir-cuenta" style="margin-bottom:6px;">Nueva Cuenta</button>
-                <button class="btn btn-gris btn-ver-historial">📄 Ver Historial (${compras.length})</button>
+                <button class="btn btn-gris btn-ver-historial">Ver Historial (${compras.length})</button>
                 <div id="historial-${c.id}" style="display: none; margin-top: 8px; max-height: 180px; overflow-y: auto; border-top: 1px dashed #ccc; padding-top: 4px;"></div>
             `;
             
@@ -408,19 +406,17 @@
                 itemH.className = 'historial-item';
                 const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
                 
-                // Distribución modular: Renglón izquierdo de datos y botón de cancelación limpio a la derecha
                 itemH.innerHTML = `
                     <div class="info-click-area" style="display: flex; justify-content: space-between; flex: 1; align-items: center; padding-right: 12px; height: 100%;">
                         <span>${limpiarFechaUniversal(v.fecha)} (Folio: ${numNota})</span>
                         <strong>$${v.total.toFixed(2)}</strong>
                     </div>
-                    <button class="btn btn-danger btn-eliminar-nota" style="padding: 2px 6px; font-size: 0.75em; border-color: #cc0000;">✕</button>
+                    <button class="btn btn-danger btn-eliminar-nota" style="padding: 2px 6px; font-size: 0.75em; border-color: #cc0000;">X</button>
                 `;
                 
-                // Separación absoluta de eventos en producción
                 itemH.querySelector('.info-click-area').onclick = () => verDetalleVenta(v.id);
                 itemH.querySelector('.btn-eliminar-nota').onclick = (e) => {
-                    e.stopPropagation(); // Previene que se dispare la alerta de desglose al dar clic a la X
+                    e.stopPropagation(); 
                     eliminarVentaHistorico(v.id);
                 };
                 
@@ -471,7 +467,7 @@
             btnVolver.style.gridColumn = '1 / -1';
             btnVolver.style.background = '#e5e5e5';
             btnVolver.style.fontWeight = 'bold';
-            btnVolver.innerText = `⬅️ MENU CATEGORIAS (Viendo: ${categoriaFiltroCaja.toUpperCase()})`;
+            btnVolver.innerText = `MENU CATEGORIAS (Viendo: ${categoriaFiltroCaja.toUpperCase()})`;
             btnVolver.onclick = () => { categoriaFiltroCaja = null; renderCatalogo(); };
             catDiv.appendChild(btnVolver);
 
@@ -506,8 +502,8 @@
             div.innerHTML = `
                 <span><strong>${p.nombre}</strong> ($${p.precio.toFixed(2)}/kg) <small style="color:#666;">[${p.categoria || 'Res'}]</small></span>
                 <div style="display: flex; gap: 4px;">
-                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; background: #fff;" onclick="editarPrecioProducto(${p.id})">✏️ Editar</button>
-                    <button class="btn btn-danger">✕</button>
+                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; background: #fff;" onclick="editarPrecioProducto(${p.id})">Editar</button>
+                    <button class="btn btn-danger">X</button>
                 </div>
             `;
             div.querySelector('.btn-danger').onclick = () => eliminarProducto(p.id);
@@ -517,7 +513,7 @@
         const lc = document.getElementById('lista-config-clientes'); if(lc) lc.innerHTML = '';
         db.clientes.forEach(c => {
             const div = document.createElement('div'); div.className = 'item-admin';
-            div.innerHTML = `<span>${c.nombre}</span><button class="btn btn-danger">✕</button>`;
+            div.innerHTML = `<span>${c.nombre}</span><button class="btn btn-danger">X</button>`;
             div.querySelector('.btn-danger').onclick = () => eliminarCliente(c.id);
             if(lc) lc.appendChild(div);
         });
@@ -666,18 +662,16 @@
         });
     }
 
-    // MEJORA: Modificada a solo lectura para ver detalles limpiamente
     function verDetalleVenta(idVenta) {
         const v = db.ventas.find(venta => venta.id === idVenta);
         if(!v) return;
         
         const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
-        let detalle = v.items.map(i => `• ${i.nombre} (${i.peso.toFixed(3)} Kg) -> $${i.subtotal.toFixed(2)}`).join('\n');
+        let detalle = v.items.map(i => '- ' + i.nombre + ' (' + i.peso.toFixed(3) + ' Kg) -> $' + i.subtotal.toFixed(2)).join('\n');
         
         alert(`Folio Nota: #${numNota}\nCliente: ${v.clienteNombre}\nFecha: ${v.fecha}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
     }
 
-    // MEJORA: Nueva función atómica dedicada a la remoción independiente por clic en la X
     function eliminarVentaHistorico(idVenta) {
         const v = db.ventas.find(venta => venta.id === idVenta);
         if(!v) return;
