@@ -25,7 +25,7 @@
         .flex-pos { display: flex; flex-wrap: wrap; gap: 20px; }
         .catalogo { flex: 2; min-width: 300px; }
         .ticket-preview { flex: 1; background: var(--blanco); min-width: 300px; padding: 20px; border: 1px solid var(--oscuro); position: sticky; top: 10px; }
-        input { width: 100%; padding: 8px; border: 1px solid var(--oscuro); margin-bottom: 10px; background: white; font-size: 1em; height: 40px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid var(--oscuro); margin-bottom: 10px; background: white; font-size: 1em; height: 40px; }
         .item-admin { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--gris); font-size: 0.9em; }
         .tabs-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--oscuro); padding-bottom: 10px; }
         .tab-btn { background: none; border: none; padding: 10px; cursor: pointer; font-weight: bold; font-size: 0.9em; color: #777; text-transform: uppercase; }
@@ -136,6 +136,14 @@
             <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
                 <input type="text" id="p-nombre" placeholder="Nombre del corte">
                 <input type="number" id="p-precio" placeholder="Precio por Kg">
+                
+                <label style="font-weight: bold; font-size: 0.8em; display: block; margin-bottom: 4px;">CATEGORÍA:</label>
+                <select id="p-categoria">
+                    <option value="Res">Res</option>
+                    <option value="Cerdo">Cerdo</option>
+                    <option value="Pollo">Pollo</option>
+                </select>
+                
                 <button class="btn btn-primario" onclick="agregarProducto()">＋ Guardar Corte</button>
             </div>
             <div id="lista-config-productos"></div>
@@ -156,7 +164,7 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=50').catch(() => console.log("Offline listo"));
+        navigator.serviceWorker.register('./sw.js?v=55').catch(() => console.log("Offline listo"));
     }
 
     let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
@@ -173,22 +181,23 @@
 
     db.ultimoFolio = db.ultimoFolio || 0;
 
+    // Inicialización con soporte de categorías nativo
     if(db.productos.length === 0) {
         db.productos = [
-            { id: 1, nombre: 'Bistec de Res', precio: 160 },
-            { id: 2, nombre: 'Costilla de Cerdo', precio: 120 }
+            { id: 1, nombre: 'Bistec de Res', precio: 160, categoria: 'Res' },
+            { id: 2, nombre: 'Costilla de Cerdo', precio: 120, categoria: 'Cerdo' }
         ];
     }
     if(db.clientes.length === 0) {
         db.clientes = [{ id: 101, nombre: "Cliente General" }];
     }
 
-    // MEJORA: Asegurar orden alfabético inicial con soporte para acentos y eñes en español
     db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
     let carrito = [];
     let clienteSeleccionado = null;
     let bloqueadoPorVentaActiva = false; 
+    let categoriaFiltroCaja = null; // MEJORA 2: Variable de control de filtrado dinámico para la caja
     const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
 
     window.onload = () => {
@@ -290,15 +299,14 @@
         }
     }
 
-    // MEJORA: Añadir y ordenar automáticamente de manera alfabética
+    // MEJORA 1: Recolección e inyección de categorías en administración
     function agregarProducto() {
         const nom = document.getElementById('p-nombre').value.trim();
         const pre = parseFloat(document.getElementById('p-precio').value);
+        const cat = document.getElementById('p-categoria').value; 
         if(!nom || isNaN(pre) || pre <= 0) return;
         
-        db.productos.push({ id: Date.now(), nombre: nom, precio: pre });
-        
-        // Inyección del ordenamiento alfabético en tiempo de guardado
+        db.productos.push({ id: Date.now(), nombre: nom, precio: pre, categoria: cat });
         db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
         
         document.getElementById('p-nombre').value = '';
@@ -369,25 +377,55 @@
         });
     }
 
+    // MEJORA 2: Renderizador inteligente por categorías para la caja registradora
     function renderCatalogo() {
-        const cat = document.getElementById('catalogo-btns');
-        if(!cat) return; cat.innerHTML = '';
-        db.productos.forEach(p => {
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-gris';
-            btn.style.background = '#fff';
-            btn.style.textAlign = 'left';
-            btn.innerHTML = `<strong>${p.nombre}</strong><br><span style="color:var(--primario)">$${p.precio.toFixed(2)} / Kg</span>`;
-            btn.onclick = () => agregarAlCarrito(p.id);
-            cat.appendChild(btn);
-        });
+        const catDiv = document.getElementById('catalogo-btns');
+        if(!catDiv) return; catDiv.innerHTML = '';
+        
+        if (!categoriaFiltroCaja) {
+            // Fase A: Si no hay categoría elegida, despliega los 3 botones principales requeridos
+            const categoriasValidas = ['Res', 'Cerdo', 'Pollo'];
+            categoriasValidas.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primario';
+                btn.style.background = 'var(--oscuro)';
+                btn.style.borderColor = 'var(--oscuro)';
+                btn.style.fontSize = '1.1em';
+                btn.style.padding = '20px 10px';
+                btn.innerText = cat.toUpperCase();
+                btn.onclick = () => { categoriaFiltroCaja = cat; renderCatalogo(); };
+                catDiv.appendChild(btn);
+            });
+        } else {
+            // Fase B: Muestra el botón de regreso junto con los cortes que corresponden a la selección
+            const btnVolver = document.createElement('button');
+            btnVolver.className = 'btn btn-gris';
+            btnVolver.style.gridColumn = '1 / -1';
+            btnVolver.style.background = '#e5e5e5';
+            btnVolver.style.fontWeight = 'bold';
+            btnVolver.innerText = `⬅️ MENU CATEGORIAS (Viendo: ${categoriaFiltroCaja.toUpperCase()})`;
+            btnVolver.onclick = () => { categoriaFiltroCaja = null; renderCatalogo(); };
+            catDiv.appendChild(btnVolver);
+
+            const productosFiltrados = db.productos.filter(p => (p.categoria || 'Res') === categoriaFiltroCaja);
+            
+            productosFiltrados.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-gris';
+                btn.style.background = '#fff';
+                btn.style.textAlign = 'left';
+                btn.innerHTML = `<strong>${p.nombre}</strong><br><span style="color:var(--primario)">$${p.precio.toFixed(2)} / Kg</span>`;
+                btn.onclick = () => agregarAlCarrito(p.id);
+                catDiv.appendChild(btn);
+            });
+        }
     }
 
     function renderListasAdmin() {
         const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
         db.productos.forEach(p => {
             const div = document.createElement('div'); div.className = 'item-admin';
-            div.innerHTML = `<span>${p.nombre} ($${p.precio}/kg)</span><button class="btn btn-danger">✕</button>`;
+            div.innerHTML = `<span>${p.nombre} ($${p.precio}/kg) [${p.categoria || 'Res'}]</span><button class="btn btn-danger">✕</button>`;
             div.querySelector('.btn-danger').onclick = () => eliminarProducto(p.id);
             if(lp) lp.appendChild(div);
         });
@@ -405,9 +443,11 @@
         if(!cliente) return;
         clienteSeleccionado = cliente;
         bloqueadoPorVentaActiva = true; 
+        categoriaFiltroCaja = null; // Reiniciar filtro al abrir cuenta nueva
         document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
         carrito = [];
         actualizarTicketUI();
+        renderCatalogo();
     }
 
     function agregarAlCarrito(idProd) {
@@ -471,7 +511,6 @@
         guardarDB(); renderClientes();
     }
 
-    // ARREGLADO: Ajustada variable para evitar excepciones de red al procesar el stream Base64
     function base64ToBlobManual(base64Data, contentType) {
         const trozos = base64Data.split(',');
         const bytesTexto = atob(trozos[1]);
@@ -569,10 +608,7 @@
             const cloudData = await res.json();
             if(cloudData && cloudData.updatedAt && cloudData.updatedAt > db.updatedAt) {
                 db = cloudData;
-                
-                // MEJORA: Re-ordenar alfabéticamente al descargar cambios de la nube desde otro dispositivo
                 db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-                
                 localStorage.setItem('carniceria_db', JSON.stringify(db));
                 aplicarConfigUI(); renderClientes(); renderCatalogo();
             } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
