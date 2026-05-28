@@ -86,16 +86,8 @@
                     </p>
                     <table width="100%" style="font-size: 11px; border-top: 1px solid #000; padding-top: 5px;" id="tkt-tabla"></table>
                     
-                    <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 10px; font-size: 11px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                            <span>SUBTOTAL:</span>
-                            <span id="tkt-subtotal">$0.00</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                            <span>IVA (16%):</span>
-                            <span id="tkt-iva">$0.00</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; border-top: 1px solid #000; padding-top: 4px;">
+                    <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 10px; font-size: 13px; font-weight: bold;">
+                        <div style="display: flex; justify-content: space-between;">
                             <span>TOTAL:</span>
                             <span id="tkt-total">$0.00</span>
                         </div>
@@ -177,9 +169,8 @@
 <div id="ticket-final" style="display: none;"></div>
 
 <script>
-    // SISTEMA INTELLIGENT AUTO-UPDATE (EVITA RETENCIÓN DE CACHÉ EN PRODUCCIÓN)
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=85')
+        navigator.serviceWorker.register('./sw.js?v=90')
             .then(reg => {
                 reg.onupdatefound = () => {
                     const instalandoWorker = reg.installing;
@@ -404,6 +395,8 @@
         }
     }
 
+    document.getElementsByClassName = function(clase) { return document.querySelectorAll('.' + clase); };
+
     function renderClientes() {
         const lista = document.getElementById('lista-clientes');
         if(!lista) return; lista.innerHTML = '';
@@ -476,8 +469,8 @@
                 catDiv.appendChild(btn);
             });
         } else if (!categoriaFiltroCaja) {
-            const categoriasValidas = ['Res', 'Cerdo', 'Pollo'];
-            categoriasValidas.forEach(cat => {
+            const Cigarra = ['Res', 'Cerdo', 'Pollo'];
+            Cigarra.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.className = 'btn btn-primario';
                 btn.style.background = 'var(--oscuro)';
@@ -571,6 +564,7 @@
         actualizarTicketUI();
     }
 
+    // MODIFICADO: Remoción de la matemática de división del 16% inverso para imprimir total plano directo
     function actualizarTicketUI() {
         document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
         document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
@@ -594,13 +588,7 @@
             </tr>`;
         });
 
-        let subtotalSinIva = total / 1.16;
-        let ivaCalculado = total - subtotalSinIva;
-
-        document.getElementById('tkt-subtotal').innerText = `$${subtotalSinIva.toFixed(2)}`;
-        document.getElementById('tkt-iva').innerText = `$${ivaCalculado.toFixed(2)}`;
         document.getElementById('tkt-total').innerText = `$${total.toFixed(2)}`;
-        
         irA('vista-caja');
     }
 
@@ -664,7 +652,7 @@
                     await navigator.share({
                         files: [archivo],
                         title: `Nota 7 Toros #${tktId}`,
-                        text: `Nota de venta de la carnicería.`
+                        text: `Nota de venta de la carniceria.`
                     });
                     finalizarVenta();
                     irA('vista-inicio');
