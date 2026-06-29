@@ -3,38 +3,744 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>7 Toros - Aviso del Sistema</title>
+    <title>7 Toros - POS Ecosistema</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <style>
-        body { background: #f7f7f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: #1a1a1a; }
-        .box { background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e5e5e5; max-width: 400px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h1 { color: #c21807; font-size: 1.5em; text-transform: uppercase; margin-top: 0; }
-        p { font-size: 0.95em; line-height: 1.5; color: #555; }
+        :root { --primario: #c21807; --oscuro: #1a1a1a; --gris: #f7f7f7; --borde: #e5e5e5; --blanco: #ffffff; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        body { background: var(--gris); margin: 0; padding: 0; color: var(--oscuro); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: var(--blanco); padding: 15px; text-align: center; border-bottom: 2px solid var(--oscuro); }
+        .logo { max-height: 80px; width: auto; display: block; margin: 0 auto 5px auto; object-fit: contain; }
+        .btn { border: 1px solid var(--oscuro); padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 0.8em; transition: 0.1s; display: inline-block; text-align: center; }
+        .btn-primario { background: var(--primario); color: white; border-color: var(--primario); width: 100%; }
+        .btn-gris { background: transparent; color: var(--oscuro); width: 100%; }
+        .btn-danger { background: #ffdddd; color: #cc0000; border-color: #cc0000; padding: 4px 8px; font-size: 0.7em; }
+        .btn:active { transform: scale(0.97); }
+        .view { display: none; }
+        .view.active { display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .card { background: var(--blanco); padding: 15px; border: 1px solid var(--borde); margin-bottom: 15px; }
+        .historial-item { background: var(--gris); padding: 6px 8px; font-size: 0.8em; border: 1px solid var(--borde); margin-top: 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .flex-pos { display: flex; flex-wrap: wrap; gap: 20px; }
+        .catalogo { flex: 2; min-width: 300px; }
+        .ticket-preview { flex: 1; background: var(--blanco); min-width: 300px; padding: 20px; border: 1px solid var(--oscuro); position: sticky; top: 10px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid var(--oscuro); margin-bottom: 10px; background: white; font-size: 1em; height: 40px; }
+        .item-admin { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--gris); font-size: 0.9em; }
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--oscuro); padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; padding: 10px; cursor: pointer; font-weight: bold; font-size: 0.9em; color: #777; text-transform: uppercase; }
+        .tab-btn.active { color: var(--primario); border-bottom: 3px solid var(--primario); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        #status-red { font-size: 0.75em; font-weight: bold; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-top: 5px; }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h1>Licencia Suspendida</h1>
-    <p>El acceso al ecosistema de 7 Toros ha sido pausado temporalmente por falta de pago de renovacion de licencia o saldo pendiente.</p>
-    <p>Para reactivar el servicio y recuperar el acceso a sus registros, por favor pongase en contacto con el administrador del software.</p>
+<header>
+    <img src="https://via.placeholder.com/120x60?text=7+Toros" alt="7 Toros" class="logo" id="app-logo">
+    <h1 id="nombre-negocio" style="margin:0; font-size: 1.5em; text-transform: uppercase;">7 Toros</h1>
+    <div id="status-red" class="online">Detectando senal...</div>
+</header>
+
+<div class="container">
+
+    <div id="vista-inicio" class="view active">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--oscuro); padding-bottom: 5px;">
+            <h2 style="margin:0; font-weight: 400;">CLIENTES</h2>
+            <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-config')">Panel de Control</button>
+        </div>
+        <div id="lista-clientes" class="grid"></div>
+    </div>
+
+    <div id="vista-caja" class="view">
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">Volver</button>
+        <div style="background: var(--oscuro); color: white; padding: 12px; margin-bottom: 15px; font-size: 0.9em; text-transform: uppercase;">
+            Cuenta: <span id="cliente-actual-nombre" style="color: var(--primario); font-weight: bold;"></span>
+        </div>
+        <div class="flex-pos">
+            <div class="catalogo">
+                <div style="background: white; padding: 15px; border: 1px solid var(--oscuro); margin-bottom: 15px;">
+                    <label style="font-weight: bold; font-size: 0.8em;">BÁSCULA (KG):</label>
+                    <input type="number" id="peso-input" value="1.000" step="0.001" min="0.001" style="font-size: 2em; font-weight: bold; border: none; border-bottom: 2px solid var(--primario); color: var(--primario); margin: 0;">
+                </div>
+                
+                <input type="text" id="buscar-caja-input" placeholder="Buscar corte rapido en caja..." oninput="renderCatalogo()" style="margin-bottom: 15px; height: 40px;">
+                
+                <div id="catalogo-btns" class="grid"></div>
+            </div>
+            
+            <div class="ticket-preview" id="preview-container-style">
+                <div id="ticket-captura" style="background: white; padding: 15px; border: 1px dashed #333; margin-bottom: 15px; color: #000;">
+                    <div style="text-align: center;">
+                        <img src="" class="logo id-ticket-logo" style="max-height: 50px; display: none;">
+                        <h3 id="tkt-empresa" style="margin: 5px 0 0 0; text-transform: uppercase;">7 Toros</h3>
+                        <p id="tkt-contacto" style="font-size: 10px; margin: 2px 0; color: #555;"></p>
+                    </div>
+                    <p style="margin: 5px 0; font-size: 10px; border-top: 1px solid #000; padding-top: 5px;">
+                        <strong>FOLIO:</strong> <span id="tkt-id"></span><br>
+                        <strong>CLIENTE:</strong> <span id="tkt-cliente"></span><br>
+                        <strong>FECHA:</strong> <span id="tkt-fecha"></span>
+                    </p>
+                    <table width="100%" style="font-size: 11px; border-top: 1px solid #000; padding-top: 5px;" id="tkt-tabla"></table>
+                    
+                    <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 10px; font-size: 13px; font-weight: bold;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>TOTAL:</span>
+                            <span id="tkt-total">$0.00</span>
+                        </div>
+                    </div>
+
+                    <p style="text-align: center; font-size: 11px; font-weight: bold; margin: 15px 0 0 0; border-top: 1px dashed #000; padding-top: 8px; text-transform: uppercase;">¡Gracias por su compra!</p>
+                </div>
+                <button class="btn btn-primario" onclick="descargarTicketImagen()">Guardar y Compartir Nota</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-config" class="view">
+        <button class="btn btn-gris" style="width: auto;" onclick="irA('vista-inicio')">Regresar al Inicio</button>
+        
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="cambiarTab('tab-negocio', this)">Negocio y Nube</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-productos', this)">Cortes</button>
+            <button class="tab-btn" onclick="cambiarTab('tab-clientes', this)">Clientes</button>
+        </div>
+
+        <div id="tab-negocio" class="tab-content active card">
+            <h3>Configuración de Cabecera</h3>
+            <input type="text" id="cfg-nombre" placeholder="Nombre Comercial">
+            <input type="text" id="cfg-contacto" placeholder="Teléfono / Dirección">
+            
+            <label style="font-weight: bold; font-size: 0.85em; display:block; margin-bottom: 5px;">CAMBIAR LOGO:</label>
+            <input type="file" id="cfg-logo-input" accept="image/*" onchange="procesarLogo(this)">
+            
+            <div style="background: #eef; padding: 15px; margin-top: 15px; border: 1px solid #ccd;">
+                <h4>Sincronización Multidispositivo</h4>
+                <p style="font-size:0.8em; color:#555; margin:0 0 10px 0;">Crea una palabra secreta única sin espacios para enlazar tus celulares.</p>
+                <input type="text" id="cfg-sync-code" placeholder="Ej. toros7sincro" onchange="configurarSyncKey()">
+                <button class="btn btn-gris" style="background: white;" onclick="forzarSincronizacionCloud()">Forzar Sincronización Manual</button>
+            </div>
+            <button class="btn btn-primario" style="margin-top: 15px;" onclick="guardarConfigNegocio()">Guardar Configuración</button>
+        </div>
+
+        <div id="tab-productos" class="tab-content card">
+            <h3>Catálogo de Cortes</h3>
+            <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
+                <input type="text" id="p-nombre" placeholder="Nombre del corte">
+                <input type="number" id="p-precio" placeholder="Precio por Kg">
+                
+                <label style="font-weight: bold; font-size: 0.8em; display: block; margin-bottom: 4px;">CATEGORÍA:</label>
+                <select id="p-categoria">
+                    <option value="Res">Res</option>
+                    <option value="Cerdo">Cerdo</option>
+                    <option value="Pollo">Pollo</option>
+                </select>
+                
+                <button class="btn btn-primario" onclick="agregarProducto()">+ Guardar Corte</button>
+            </div>
+
+            <label style="font-weight: bold; font-size: 0.8em; display: block; margin-bottom: 6px;">FILTRAR VISTA DE CORTES:</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px;">
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: var(--oscuro); color: white;" onclick="filtrarAdminCat(null)">TODOS</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Res')">RES</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Cerdo')">CERDO</button>
+                <button class="btn" style="padding: 8px 4px; font-size: 0.75em; background: #fff;" onclick="filtrarAdminCat('Pollo')">POLLO</button>
+            </div>
+
+            <input type="text" id="buscar-admin-input" placeholder="Buscar corte en catálogo administrativo..." oninput="renderListasAdmin()" style="margin-bottom: 15px; height: 40px;">
+
+            <div id="lista-config-productos"></div>
+        </div>
+
+        <div id="tab-clientes" class="tab-content card">
+            <h3>Lista de Clientes</h3>
+            <div style="background: var(--gris); padding: 12px; margin-bottom: 15px;">
+                <input type="text" id="c-nombre" placeholder="Nombre del cliente">
+                <button class="btn btn-primario" onclick="agregarCliente()">+ Registrar Cliente</button>
+            </div>
+            <div id="lista-config-clientes"></div>
+        </div>
+    </div>
 </div>
 
+<div id="ticket-final" style="display: none;"></div>
+
 <script>
-    // OPERACION LIMPIEZA: Forzamos la destruccion del búnker offline desde el HTML
     if ('serviceWorker' in navigator) {
-        // 1. Borrar de golpe todos los archivos guardados en el cache storage
-        if (window.caches) {
-            caches.keys().then(names => {
-                for (let name of names) caches.delete(name);
-            });
-        }
-        // 2. Desregistrar el service worker para que el telefono pierda la ruta offline de la app vieja
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
-                registration.unregister();
+        navigator.serviceWorker.register('./sw.js?v=90')
+            .then(reg => {
+                reg.onupdatefound = () => {
+                    const instalandoWorker = reg.installing;
+                    instalandoWorker.onstatechange = () => {
+                        if (instalandoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            if (caches) {
+                                caches.keys().then(names => {
+                                    for (let name of names) caches.delete(name);
+                                });
+                            }
+                        }
+                    };
+                };
+            }).catch(() => console.log("Offline listo"));
+
+        let refrescando = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refrescando) {
+                window.location.reload();
+                refrescando = true;
             }
         });
+    }
+
+    let db = { negocio: { nombre: "7 Toros", contacto: "", logo: "", syncKey: "" }, productos: [], clientes: [], ventas: [], updatedAt: 0, ultimoFolio: 0 };
+    
+    try {
+        const localData = localStorage.getItem('carniceria_db');
+        if(localData) {
+            const parsed = JSON.parse(localData);
+            if(parsed && typeof parsed === 'object') {
+                db = Object.assign(db, parsed);
+            }
+        }
+    } catch(e) {}
+
+    db.ultimoFolio = db.ultimoFolio || 0;
+
+    if(db.productos.length === 0) {
+        db.productos = [
+            { id: 1, nombre: 'Bistec de Res', precio: 160, categoria: 'Res' },
+            { id: 2, nombre: 'Costilla de Cerdo', precio: 120, categoria: 'Cerdo' }
+        ];
+    }
+    if(db.clientes.length === 0) {
+        db.clientes = [{ id: 101, nombre: "Cliente General" }];
+    }
+
+    db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+    let carrito = [];
+    let clienteSeleccionado = null;
+    let bloqueadoPorVentaActiva = false; 
+    let categoriaFiltroCaja = null; 
+    let categoriaFiltroAdmin = null; 
+    const BUCKET_CLOUD = "7toros_bucket_global_2026"; 
+
+    window.onload = () => {
+        aplicarConfigUI();
+        renderClientes();
+        renderCatalogo();
+        evaluarEstadoRed();
+        
+        window.addEventListener('online', evaluarEstadoRed);
+        window.addEventListener('offline', evaluarEstadoRed);
+        
+        if(db.negocio.syncKey) descargarDeLaNube();
+        setInterval(() => { if(db.negocio.syncKey && !bloqueadoPorVentaActiva) descargarDeLaNube(); }, 10000);
+    };
+
+    function evaluarEstadoRed() {
+        const indicador = document.getElementById('status-red');
+        if(navigator.onLine) {
+            indicador.innerText = "Conectado a la Nube";
+            indicador.className = "online";
+        } else {
+            indicador.innerText = "Modo Offline Activo";
+            indicador.className = "offline";
+        }
+    }
+
+    function irA(vistaId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        const target = document.getElementById(vistaId);
+        if(target) target.classList.add('active');
+        if(vistaId === 'vista-inicio') bloqueadoPorVentaActiva = false;
+    }
+
+    function cambiarTab(tabId, elemento) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        elemento.classList.add('active');
+        const target = document.getElementById(tabId);
+        if(target) target.classList.add('active');
+        if(tabId === 'tab-productos' || tabId === 'tab-clientes') renderListasAdmin();
+    }
+
+    function aplicarConfigUI() {
+        document.getElementById('nombre-negocio').innerText = db.negocio.nombre;
+        document.getElementById('cfg-nombre').value = db.negocio.nombre;
+        document.getElementById('cfg-contacto').value = db.negocio.contacto;
+        document.getElementById('cfg-sync-code').value = db.negocio.syncKey || "";
+        if(db.negocio.logo) {
+            document.getElementById('app-logo').src = db.negocio.logo;
+            document.querySelectorAll('.id-ticket-logo').forEach(img => { img.src = db.negocio.logo; img.style.display = 'block'; });
+        }
+    }
+
+    function procesarLogo(input) {
+        if (input.files && input.files[0]) {
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxAncho = 200; 
+                    const escala = maxAncho / img.width;
+                    canvas.width = maxAncho;
+                    canvas.height = img.height * escala;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    db.negocio.logo = canvas.toDataURL('image/jpeg', 0.7); 
+                    guardarDB();
+                    aplicarConfigUI();
+                };
+                img.src = e.target.result;
+            };
+            lector.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function guardarConfigNegocio() {
+        db.negocio.nombre = document.getElementById('cfg-nombre').value;
+        db.negocio.contacto = document.getElementById('cfg-contacto').value;
+        guardarDB(); aplicarConfigUI();
+        alert("Cabecera guardada localmente.");
+    }
+
+    function configurarSyncKey() {
+        db.negocio.syncKey = document.getElementById('cfg-sync-code').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        guardarDB();
+        if(db.negocio.syncKey) descargarDeLaNube();
+    }
+
+    function agregarCliente() {
+        const nom = document.getElementById('c-nombre').value.trim();
+        if(!nom) return;
+        db.clientes.push({ id: Date.now(), nombre: nom });
+        document.getElementById('c-nombre').value = '';
+        guardarDB(); renderClientes(); renderListasAdmin();
+    }
+
+    function eliminarCliente(id) {
+        if(confirm("¿Eliminar este cliente?")) {
+            db.clientes = db.clientes.filter(c => c.id !== id);
+            db.ventas = db.ventas.filter(v => v.clienteId !== id);
+            guardarDB(); renderClientes(); renderListasAdmin();
+        }
+    }
+
+    function agregarProducto() {
+        const nom = document.getElementById('p-nombre').value.trim();
+        const pre = parseFloat(document.getElementById('p-precio').value);
+        const cat = document.getElementById('p-categoria').value; 
+        if(!nom || isNaN(pre) || pre <= 0) return;
+        
+        db.productos.push({ id: Date.now(), nombre: nom, precio: pre, categoria: cat });
+        db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        
+        document.getElementById('p-nombre').value = '';
+        document.getElementById('p-precio').value = '';
+        guardarDB(); renderCatalogo(); renderListasAdmin();
+    }
+
+    function eliminarProducto(id) {
+        if(confirm("¿Eliminar este corte?")) {
+            db.productos = db.productos.filter(p => p.id !== id);
+            guardarDB(); renderCatalogo(); renderListasAdmin();
+        }
+    }
+
+    function editarPrecioProducto(id) {
+        const prod = db.productos.find(p => p.id === id);
+        if(!prod) return;
+        
+        const nuevoPrecio = prompt(`Modificar precio de: ${prod.nombre.toUpperCase()}\nPrecio actual por Kg: $${prod.precio.toFixed(2)}\n\nIngresa el nuevo precio:`, prod.precio);
+        if(nuevoPrecio === null) return; 
+        
+        const precioFloat = parseFloat(nuevoPrecio);
+        if(isNaN(precioFloat) || precioFloat <= 0) {
+            alert("Operación cancelada. El precio debe ser un número válido mayor a 0.");
+            return;
+        }
+        
+        prod.precio = precioFloat;
+        guardarDB();
+        renderCatalogo();
+        renderListasAdmin();
+    }
+
+    function filtrarAdminCat(cat) {
+        categoriaFiltroAdmin = cat;
+        renderListasAdmin();
+    }
+
+    function limpiarFechaUniversal(cadenaFecha) {
+        if(!cadenaFecha) return "";
+        let limpia = cadenaFecha.replace(/,/, ''); 
+        return limpia.split(' ')[0] || limpia;
+    }
+
+    function toggleHistorial(id, btn, totalVentas) {
+        const divHistorial = document.getElementById('historial-' + id);
+        if(!divHistorial) return;
+        
+        if(divHistorial.style.display === 'none' || divHistorial.style.display === '') {
+            divHistorial.style.display = 'block';
+            btn.innerText = 'Ocultar Historial';
+        } else {
+            divHistorial.style.display = 'none';
+            btn.innerText = `Ver Historial (${totalVentas})`;
+        }
+    }
+
+    document.getElementsByClassName = function(clase) { return document.querySelectorAll('.' + clase); };
+
+    function renderClientes() {
+        const lista = document.getElementById('lista-clientes');
+        if(!lista) return; lista.innerHTML = '';
+        
+        db.clientes.forEach(c => {
+            const compras = db.ventas.filter(v => v.clienteId === c.id);
+            const total = compras.reduce((acc, v) => acc + v.total, 0);
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <h3 style="margin:0; text-transform:uppercase;">${c.nombre}</h3>
+                <p style="font-size:0.85em; color:#555; margin-bottom:10px;">Historial: <strong>$${total.toFixed(2)}</strong></p>
+                <button class="btn btn-primario btn-abrir-cuenta" style="margin-bottom:6px;">Nueva Cuenta</button>
+                <button class="btn btn-gris btn-ver-historial">Ver Historial (${compras.length})</button>
+                <div id="historial-${c.id}" style="display: none; margin-top: 8px; max-height: 180px; overflow-y: auto; border-top: 1px dashed #ccc; padding-top: 4px;"></div>
+            `;
+            
+            card.querySelector('.btn-abrir-cuenta').onclick = () => iniciarVenta(c.id);
+            
+            const btnHistorial = card.querySelector('.btn-ver-historial');
+            btnHistorial.onclick = () => toggleHistorial(c.id, btnHistorial, compras.length);
+
+            const divHistorial = card.querySelector(`#historial-${c.id}`);
+            compras.slice().reverse().forEach(v => {
+                const itemH = document.createElement('div');
+                itemH.className = 'historial-item';
+                const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
+                
+                itemH.innerHTML = `
+                    <div class="info-click-area" style="display: flex; justify-content: space-between; flex: 1; align-items: center; padding-right: 12px; height: 100%;">
+                        <span>${limpiarFechaUniversal(v.fecha)} (Folio: ${numNota})</span>
+                        <strong>$${v.total.toFixed(2)}</strong>
+                    </div>
+                    <button class="btn btn-danger btn-eliminar-nota" style="padding: 2px 6px; font-size: 0.75em; border-color: #cc0000;">X</button>
+                `;
+                
+                itemH.querySelector('.info-click-area').onclick = () => verDetalleVenta(v.id);
+                itemH.querySelector('.btn-eliminar-nota').onclick = (e) => {
+                    e.stopPropagation(); 
+                    eliminarVentaHistorico(v.id);
+                };
+                
+                divHistorial.appendChild(itemH);
+            });
+            
+            lista.appendChild(card);
+        });
+    }
+
+    function renderCatalogo() {
+        const catDiv = document.getElementById('catalogo-btns');
+        if(!catDiv) return; catDiv.innerHTML = '';
+        
+        const buscarText = document.getElementById('buscar-caja-input') ? document.getElementById('buscar-caja-input').value.trim().toLowerCase() : '';
+        
+        if (buscarText !== '') {
+            const productosFiltrados = db.productos.filter(p => p.nombre.toLowerCase().includes(buscarText));
+            if (productosFiltrados.length === 0) {
+                catDiv.innerHTML = '<p style="grid-column: 1/-1; text-align:center; font-size:0.9em; color:#777; padding:15px;">No se encontraron cortes que coincidan.</p>';
+                return;
+            }
+            productosFiltrados.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-gris';
+                btn.style.background = '#fff';
+                btn.style.textAlign = 'left';
+                btn.innerHTML = `<strong>${p.nombre}</strong><br><span style="color:var(--primario)">$${p.precio.toFixed(2)} / Kg</span> <small style="color:#777; font-size:8px;">[${p.categoria || 'Res'}]</small>`;
+                btn.onclick = () => agregarAlCarrito(p.id);
+                catDiv.appendChild(btn);
+            });
+        } else if (!categoriaFiltroCaja) {
+            const Cigarra = ['Res', 'Cerdo', 'Pollo'];
+            Cigarra.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primario';
+                btn.style.background = 'var(--oscuro)';
+                btn.style.borderColor = 'var(--oscuro)';
+                btn.style.fontSize = '1.1em';
+                btn.style.padding = '20px 10px';
+                btn.innerText = cat.toUpperCase();
+                btn.onclick = () => { categoriaFiltroCaja = cat; renderCatalogo(); };
+                catDiv.appendChild(btn);
+            });
+        } else {
+            const btnVolver = document.createElement('button');
+            btnVolver.className = 'btn btn-gris';
+            btnVolver.style.gridColumn = '1 / -1';
+            btnVolver.style.background = '#e5e5e5';
+            btnVolver.style.fontWeight = 'bold';
+            btnVolver.innerText = `MENU CATEGORIAS (Viendo: ${categoriaFiltroCaja.toUpperCase()})`;
+            btnVolver.onclick = () => { categoriaFiltroCaja = null; renderCatalogo(); };
+            catDiv.appendChild(btnVolver);
+
+            const productosFiltrados = db.productos.filter(p => (p.categoria || 'Res') === categoriaFiltroCaja);
+            productosFiltrados.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-gris';
+                btn.style.background = '#fff';
+                btn.style.textAlign = 'left';
+                btn.innerHTML = `<strong>${p.nombre}</strong><br><span style="color:var(--primario)">$${p.precio.toFixed(2)} / Kg</span>`;
+                btn.onclick = () => agregarAlCarrito(p.id);
+                catDiv.appendChild(btn);
+            });
+        }
+    }
+
+    function renderListasAdmin() {
+        const lp = document.getElementById('lista-config-productos'); if(lp) lp.innerHTML = '';
+        const buscarAdminText = document.getElementById('buscar-admin-input') ? document.getElementById('buscar-admin-input').value.trim().toLowerCase() : '';
+        
+        let productosVisualizados = categoriaFiltroAdmin 
+            ? db.productos.filter(p => (p.categoria || 'Res') === categoriaFiltroAdmin)
+            : db.productos;
+
+        if (buscarAdminText !== '') {
+            productosVisualizados = productosVisualizados.filter(p => p.nombre.toLowerCase().includes(buscarAdminText));
+        }
+
+        productosVisualizados.forEach(p => {
+            const div = document.createElement('div'); div.className = 'item-admin';
+            div.innerHTML = `
+                <span><strong>${p.nombre}</strong> ($${p.precio.toFixed(2)}/kg) <small style="color:#666;">[${p.categoria || 'Res'}]</small></span>
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn" style="padding: 4px 8px; font-size: 0.75em; background: #fff;" onclick="editarPrecioProducto(${p.id})">Editar</button>
+                    <button class="btn btn-danger">X</button>
+                </div>
+            `;
+            div.querySelector('.btn-danger').onclick = () => eliminarProducto(p.id);
+            if(lp) lp.appendChild(div);
+        });
+
+        const lc = document.getElementById('lista-config-clientes'); if(lc) lc.innerHTML = '';
+        db.clientes.forEach(c => {
+            const div = document.createElement('div'); div.className = 'item-admin';
+            div.innerHTML = `<span>${c.nombre}</span><button class="btn btn-danger">X</button>`;
+            div.querySelector('.btn-danger').onclick = () => eliminarCliente(c.id);
+            if(lc) lc.appendChild(div);
+        });
+    }
+
+    function iniciarVenta(idCliente) {
+        const cliente = db.clientes.find(c => c.id === idCliente);
+        if(!cliente) return;
+        clienteSeleccionado = cliente;
+        bloqueadoPorVentaActiva = true; 
+        categoriaFiltroCaja = null; 
+        
+        if(document.getElementById('buscar-caja-input')) {
+            document.getElementById('buscar-caja-input').value = '';
+        }
+        
+        document.getElementById('cliente-actual-nombre').innerText = cliente.nombre;
+        carrito = [];
+        actualizarTicketUI();
+        renderCatalogo();
+    }
+
+    function agregarAlCarrito(idProd) {
+        const prod = db.productos.find(p => p.id === idProd);
+        const peso = parseFloat(document.getElementById('peso-input').value);
+        if(isNaN(peso) || peso <= 0 || !prod) return;
+        carrito.push({ nombre: prod.nombre, precio: prod.precio, peso: peso, subtotal: prod.precio * peso });
+        document.getElementById('peso-input').value = "1.000";
+        actualizarTicketUI();
+    }
+
+    // MODIFICADO: Remoción de la matemática de división del 16% inverso para imprimir total plano directo
+    function actualizarTicketUI() {
+        document.getElementById('tkt-empresa').innerText = db.negocio.nombre;
+        document.getElementById('tkt-contacto').innerText = db.negocio.contacto;
+        
+        const siguienteFolio = (db.ultimoFolio || 0) + 1;
+        document.getElementById('tkt-id').innerText = siguienteFolio;
+        
+        document.getElementById('tkt-cliente').innerText = clienteSeleccionado ? clienteSeleccionado.nombre : "General";
+        document.getElementById('tkt-fecha').innerText = new Date().toLocaleString('es-MX');
+
+        const tabla = document.getElementById('tkt-tabla');
+        tabla.innerHTML = '<tr><th align="left">Corte / Precio</th><th align="center">Kg</th><th align="right">Importe</th></tr>';
+        
+        let total = 0;
+        carrito.forEach(i => {
+            total += i.subtotal;
+            tabla.innerHTML += `<tr>
+                <td>${i.nombre}<br><small style="color:#555; font-size:9px;">$${i.precio.toFixed(2)} / Kg</small></td>
+                <td align="center" style="vertical-align:middle;">${i.peso.toFixed(3)}</td>
+                <td align="right" style="vertical-align:middle;">$${i.subtotal.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        document.getElementById('tkt-total').innerText = `$${total.toFixed(2)}`;
+        irA('vista-caja');
+    }
+
+    function finalizarVenta() {
+        if(carrito.length === 0) return;
+        db.ultimoFolio = (db.ultimoFolio || 0) + 1;
+        
+        const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
+        db.ventas.push({
+            id: Date.now(), 
+            folio: db.ultimoFolio, 
+            clienteId: clienteSeleccionado.id, 
+            clienteNombre: clienteSeleccionado.nombre,
+            fecha: document.getElementById('tkt-fecha').innerText, 
+            items: [...carrito], 
+            total: total
+        });
+        bloqueadoPorVentaActiva = false;
+        guardarDB(); renderClientes();
+    }
+
+    function base64ToBlobManual(base64Data, contentType) {
+        const trozos = base64Data.split(',');
+        const bytesTexto = atob(trozos[1]);
+        const arregloBytes = new Uint8Array(bytesTexto.length);
+        for (let i = 0; i < bytesTexto.length; i++) {
+            arregloBytes[i] = bytesTexto.charCodeAt(i);
+        }
+        return new Blob([arregloBytes], { type: contentType });
+    }
+
+    function descargarTicketImagen() {
+        if(carrito.length === 0) return;
+        
+        const contenedor = document.getElementById('ticket-captura');
+        const previewEstilo = document.getElementById('preview-container-style');
+        if(previewEstilo) previewEstilo.style.position = "static";
+
+        const anchoTicket = contenedor.offsetWidth;
+        const altoTicket = contenedor.offsetHeight;
+
+        html2canvas(contenedor, { 
+            scale: 2, 
+            backgroundColor: "#ffffff", 
+            useCORS: true,
+            scrollX: 0, 
+            scrollY: 0, 
+            width: anchoTicket, 
+            height: altoTicket 
+        }).then(async canvas => {
+            if(previewEstilo) previewEstilo.style.position = "sticky"; 
+            
+            const dataUrl = canvas.toDataURL("image/png");
+            const tktId = document.getElementById('tkt-id').innerText;
+
+            try {
+                const blobTicket = base64ToBlobManual(dataUrl, "image/png");
+                const archivo = new File([blobTicket], `Nota_${tktId}.png`, { type: "image/png" });
+                
+                if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+                    await navigator.share({
+                        files: [archivo],
+                        title: `Nota 7 Toros #${tktId}`,
+                        text: `Nota de venta de la carniceria.`
+                    });
+                    finalizarVenta();
+                    irA('vista-inicio');
+                } else {
+                    const link = document.createElement('a');
+                    link.download = `Ticket_${tktId}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                    finalizarVenta();
+                    irA('vista-inicio');
+                }
+            } catch (err) {
+                const ventanaImagen = window.open();
+                if(ventanaImagen) {
+                    ventanaImagen.document.write(`<p style="font-family:sans-serif; text-align:center;">Mantén presionada la imagen para guardarla o enviarla por WhatsApp:</p><img src="${dataUrl}" style="border:1px solid #000; display:block; margin:0 auto; max-width:100%;">`);
+                }
+                finalizarVenta();
+                irA('vista-inicio');
+            }
+        });
+    }
+
+    function verDetalleVenta(idVenta) {
+        const v = db.ventas.find(venta => venta.id === idVenta);
+        if(!v) return;
+        
+        const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
+        let detalle = v.items.map(i => '- ' + i.nombre + ' (' + i.peso.toFixed(3) + ' Kg) -> $' + i.subtotal.toFixed(2)).join('\n');
+        
+        alert(`Folio Nota: #${numNota}\nCliente: ${v.clienteNombre}\nFecha: ${v.fecha}\n-----------\n${detalle}\n-----------\nTOTAL: $${v.total.toFixed(2)}`);
+    }
+
+    function eliminarVentaHistorico(idVenta) {
+        const v = db.ventas.find(venta => venta.id === idVenta);
+        if(!v) return;
+        
+        const numNota = v.folio ? v.folio : v.id.toString().slice(-6);
+        const confirmacion = confirm(`¿Deseas ELIMINAR permanentemente la Nota Folio #${numNota}?\nSe descontará de los saldos acumulados de inmediato.`);
+        
+        if (confirmacion) {
+            db.ventas = db.ventas.filter(venta => venta.id !== idVenta);
+            guardarDB();
+            renderClientes();
+            alert("Nota eliminada correctamente.");
+        }
+    }
+
+    async function subirALaNube() {
+        if(!navigator.onLine || !db.negocio.syncKey) return;
+        try {
+            await fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(db)
+            });
+        } catch(e) {}
+    }
+
+    async function descargarDeLaNube() {
+        if(!navigator.onLine || !db.negocio.syncKey || bloqueadoPorVentaActiva) return;
+        try {
+            const res = await fetch(`https://kvdb.io/${BUCKET_CLOUD}/${db.negocio.syncKey}`);
+            if(!res.ok) return;
+            const cloudData = await res.json();
+            if(cloudData && cloudData.updatedAt && cloudData.updatedAt > db.updatedAt) {
+                db = cloudData;
+                db.productos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+                localStorage.setItem('carniceria_db', JSON.stringify(db));
+                aplicarConfigUI(); renderClientes(); renderCatalogo();
+            } else if(cloudData && db.updatedAt > cloudData.updatedAt) {
+                subirALaNube();
+            }
+        } catch(e) {}
+    }
+
+    function forzarSincronizacionCloud() {
+        if(!navigator.onLine) { alert("Estás offline."); return; }
+        descargarDeLaNube(); alert("Sincronización en curso.");
+    }
+
+    function guardarDB() {
+        db.updatedAt = Date.now();
+        try {
+            localStorage.setItem('carniceria_db', JSON.stringify(db));
+        } catch(e) {}
+        subirALaNube();
     }
 </script>
 </body>
 </html>
+
